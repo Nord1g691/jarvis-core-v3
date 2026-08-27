@@ -1,0 +1,16 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "JARVIS Core V3",
+        "description": "Select the four Home Assistant power sensors used by JARVIS.",
+        "data": {
+          "energy_production_entity": "Solar production (instantaneous)",
+          "energy_consumption_entity": "Current consumption",
+          "energy_import_entity": "Grid import",
+          "energy_export_entity": "Grid export"
+        }
+      }
+    }
+  }
+}
