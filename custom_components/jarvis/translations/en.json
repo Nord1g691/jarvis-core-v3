@@ -1,0 +1,10 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "JARVIS Core V3",
+        "description": "Initialize JARVIS Core V3."
+      }
+    }
+  }
+}
