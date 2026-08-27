@@ -1,29 +1,27 @@
-"""JARVIS Core V3 sidebar panel registration."""
+"""JARVIS Core V3 sidebar panel."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
+from aiohttp import web
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.http import KEY_AUTH_DOMAIN
-
-from . import DOMAIN
 
 
 class JarvisPanelView(HomeAssistantView):
-    """Serve the JARVIS V3 HUD from the integration."""
+    """Serve the JARVIS V3 HUD."""
 
     url = "/jarvis-core-v3"
     name = "api:jarvis_core_v3:panel"
     requires_auth = True
 
     async def get(self, request):
-        """Return the JARVIS HUD."""
+        """Return the HUD HTML."""
         path = Path(__file__).parent / "frontend" / "index.html"
-        return await self.json({"panel": str(path)})
+        return web.FileResponse(path)
 
 
 async def async_register_panel(hass: HomeAssistant) -> None:
-    """Register the sidebar panel resources."""
+    """Register the JARVIS panel HTTP view."""
     hass.http.register_view(JarvisPanelView())
