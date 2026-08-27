@@ -6,6 +6,7 @@ from typing import Any
 
 import voluptuous as vol
 from homeassistant import config_entries
+from homeassistant.helpers import selector
 
 from . import DOMAIN
 
@@ -13,7 +14,7 @@ from . import DOMAIN
 class JarvisConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle JARVIS Core V3 configuration."""
 
-    VERSION = 1
+    VERSION = 2
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -25,7 +26,18 @@ class JarvisConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 data=user_input,
             )
 
+        entity_selector = selector.EntitySelector(
+            selector.EntitySelectorConfig(domain="sensor", multiple=False)
+        )
+
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema({}),
+            data_schema=vol.Schema(
+                {
+                    vol.Required("energy_production_entity"): entity_selector,
+                    vol.Required("energy_consumption_entity"): entity_selector,
+                    vol.Required("energy_import_entity"): entity_selector,
+                    vol.Required("energy_export_entity"): entity_selector,
+                }
+            ),
         )
