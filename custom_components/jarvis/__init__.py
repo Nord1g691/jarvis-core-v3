@@ -13,25 +13,13 @@ PANEL_NAME = "jarvis"
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Set up JARVIS Core V3."""
-    await _async_register_panel(hass)
     return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
     """Set up JARVIS Core V3 from a config entry."""
-    await _async_register_panel(hass)
-    return True
-
-
-async def async_unload_entry(hass: HomeAssistant, entry) -> bool:
-    """Unload JARVIS Core V3."""
-    return True
-
-
-async def _async_register_panel(hass: HomeAssistant) -> None:
-    """Register the JARVIS HUD in the Home Assistant sidebar."""
-    if PANEL_NAME in hass.data.get(DOMAIN, set()):
-        return
+    if DOMAIN in hass.data:
+        return True
 
     frontend_dir = Path(__file__).parent / "frontend"
     hass.http.register_static_path(
@@ -48,4 +36,11 @@ async def _async_register_panel(hass: HomeAssistant) -> None:
         config={"url": "/jarvis-core-v3/index.html"},
         require_admin=False,
     )
-    hass.data.setdefault(DOMAIN, set()).add(PANEL_NAME)
+    hass.data[DOMAIN] = True
+    return True
+
+
+async def async_unload_entry(hass: HomeAssistant, entry) -> bool:
+    """Unload JARVIS Core V3."""
+    hass.data.pop(DOMAIN, None)
+    return True
