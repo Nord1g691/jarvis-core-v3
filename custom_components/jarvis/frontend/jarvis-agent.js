@@ -25,10 +25,13 @@
         select.onchange = () => { localStorage.setItem("jarvis_assist_pipeline", select.value); this._log?.("✓ Pipeline JARVIS → " + (select.value || "AUTOMATIQUE")); };
         this._loadAssistPipelines();
       }
-      this._updateAutomaticEnergy?.();
+      if (!this.__jarvisEnergyTimer) {
+        this._updateAutomaticEnergy?.();
+        this.__jarvisEnergyTimer = setInterval(() => this._updateAutomaticEnergy?.(), 10000);
+      }
     };
 
-    C.prototype.update = async function (manual = false) { await originalUpdate.call(this, manual); await this._updateAutomaticEnergy?.(); };
+    C.prototype.update = async function (manual = false) { await originalUpdate.call(this, manual); };
 
     C.prototype._loadAssistPipelines = async function () {
       const select = this.shadowRoot?.getElementById("pipelineSelect"), info = this.shadowRoot?.getElementById("pipelineInfo"); if (!select || !this._hass) return;
@@ -54,10 +57,10 @@
         const imp = pick(["import net réseau instantané","import_net_reseau_instantane","import réseau","import","grid import","grid_import"]);
         const exp = pick(["export net réseau instantané","export_net_reseau_instantane","export réseau","export","grid export","grid_export"]);
         const kw = s => { if (!s) return null; const n = parseFloat(s.state), u = String(s.attributes?.unit_of_measurement || "").toLowerCase(); if (!Number.isFinite(n)) return null; return u === "kw" ? n : n / 1000; };
-        const set = (id, s) => { const el = root.getElementById(id); if (!el) return; const n = kw(s); el.textContent = n === null || n < 0 || n > 10 ? "--" : n.toFixed(1) + " kW"; };
+        const set = (id, s) => { const el = root.getElementById(id); if (!el) return; const n = kw(s); const next = n === null || n < 0 || n > 10 ? "--" : n.toFixed(1) + " kW"; if (el.textContent !== next) el.textContent = next; };
         set("production", production); set("consumption", consumption); set("import", imp); set("export", exp);
         const p = kw(production), e = kw(exp); const self = root.getElementById("selfConsumption");
-        if (self && p !== null && p >= 0 && p <= 10) { const rate = p > 0 ? Math.max(0, Math.min(100, ((p - Math.max(0,e || 0)) / p) * 100)) : 0; self.textContent = rate.toFixed(0) + "%"; }
+        if (self && p !== null && p >= 0 && p <= 10) { const rate = p > 0 ? Math.max(0, Math.min(100, ((p - Math.max(0,e || 0)) / p) * 100)) : 0; const next = rate.toFixed(0) + "%"; if (self.textContent !== next) self.textContent = next; }
       } catch (e) { /* Keep existing UI stable if HA states are unavailable. */ }
     };
     return true;
