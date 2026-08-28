@@ -1,0 +1,1 @@
+Graphical test branch based on 24a8011d. Do not alter solar logic.
