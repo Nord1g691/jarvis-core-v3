@@ -5,7 +5,6 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
 from .solar import (
-    JarvisSelfConsumptionDailySensor,
     JarvisSelfConsumptionInstantSensor,
     JarvisSolarSensor,
     JarvisSolarSurplusSensor,
@@ -24,7 +23,6 @@ async def async_setup_entry(
         + [
             JarvisSolarSurplusSensor(hass, entry.entry_id),
             JarvisSelfConsumptionInstantSensor(hass, entry.entry_id),
-            JarvisSelfConsumptionDailySensor(hass, entry.entry_id),
         ],
         update_before_add=True,
     )
