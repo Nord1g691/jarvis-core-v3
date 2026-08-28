@@ -10,6 +10,26 @@
     C.prototype.render = function () {
       originalRender.call(this);
 
+      // Small, safe navigation control: return to the HA sidebar/page.
+      if (this.shadowRoot && !this.shadowRoot.getElementById("jarvisBackButton")) {
+        const back = document.createElement("button");
+        back.id = "jarvisBackButton";
+        back.type = "button";
+        back.textContent = "‹ Retour";
+        back.title = "Retour à Home Assistant";
+        back.style.cssText = "position:fixed;top:10px;left:10px;z-index:9999;min-height:34px;padding:0 12px;border:1px solid #00cfff55;border-radius:8px;background:#031322;color:#dffaff;font:600 12px system-ui;cursor:pointer;box-shadow:0 2px 10px #0006";
+        back.onclick = () => {
+          try {
+            if (window.history.length > 1) window.history.back();
+            else if (window.parent && window.parent !== window) window.parent.history.back();
+            else window.location.href = "/";
+          } catch (_) {
+            window.location.href = "/";
+          }
+        };
+        this.shadowRoot.appendChild(back);
+      }
+
       // Keep the existing Assist/Pipeline selector untouched.
       const grid = this.shadowRoot?.querySelector(".grid");
       if (grid && !this.shadowRoot.getElementById("pipelineCard")) {
@@ -41,8 +61,6 @@
       this._updateSelfConsumption?.();
     };
 
-    // The original HUD refreshes every 5 seconds; update the added value on
-    // the same cadence without changing the Assist pipeline logic.
     C.prototype.update = async function (manual = false) {
       await originalUpdate.call(this, manual);
       await this._updateSelfConsumption?.();
