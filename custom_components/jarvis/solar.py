@@ -2,17 +2,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime
 import re
 from typing import Any
 
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import UnitOfEnergy, UnitOfPower
-from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import dt_util
-from homeassistant.helpers.event import async_track_state_change_event
-from homeassistant.helpers.restore_state import RestoreEntity
+from homeassistant.const import UnitOfPower
+from homeassistant.core import HomeAssistant
 
 
 @dataclass
@@ -22,10 +18,17 @@ class _Candidate:
 
 
 TARGETS = {
-    "production": ("solar", "solaire", "production", "photovolta", "pv", "produit", "produced"),
-    "consumption": ("consumption", "consommation", "maison", "house", "home", "load", "total", "usage", "consumed"),
-    "import": ("import", "importation", "grid import", "réseau import", "from grid", "net import"),
-    "export": ("export", "exportation", "grid export", "réseau export", "injection", "to grid", "net export"),
+    "production": ("solar", "solaire", "production", "photovolta", "pv", "produced", "production électrique"),
+    "consumption": ("consumption", "consommation", "maison", "house", "home", "load", "usage", "consumed"),
+    "import": ("import", "importation", "grid import", "import réseau", "from grid", "net import"),
+    "export": ("export", "exportation", "grid export", "export réseau", "injection", "to grid", "net export"),
+}
+
+_EXCLUSIONS = {
+    "production": ("consommation", "consumption", "import", "export", "battery", "batterie"),
+    "consumption": ("production", "solaire", "solar", "photovolta", "import", "export", "battery", "batterie"),
+    "import": ("export", "production", "solaire", "solar", "consommation", "consumption"),
+    "export": ("import", "production", "solaire", "solar", "consommation", "consumption"),
 }
 
 
@@ -33,43 +36,68 @@ def _norm(value: object) -> str:
     return re.sub(r"[^a-z0-9]+", " ", str(value).lower()).strip()
 
 
-def _score(state: Any, keywords: tuple[str, ...]) -> int:
+def _score(state: Any, target: str) -> int:
     if state.entity_id.startswith("sensor.jarvis_"):
-        return -100
+        return -1000
+
     attrs = state.attributes
     unit = _norm(attrs.get("unit_of_measurement", ""))
     dc = _norm(attrs.get("device_class", ""))
-    if dc not in {"power", ""} and unit not in {"w", "kw"}:
-        return -100
     if unit not in {"w", "kw"} and dc != "power":
-        return -100
-    text = " ".join(_norm(attrs.get(k, "")) for k in ("friendly_name", "name", "device_class", "state_class"))
+        return -1000
+    if unit not in {"", "w", "kw"} and dc != "power":
+        return -1000
+
+    text = " ".join(
+        _norm(attrs.get(k, ""))
+        for k in ("friendly_name", "name", "device_class", "state_class")
+    )
     text += " " + _norm(state.entity_id)
-    score = 1 + (10 if dc == "power" else 0) + (4 if unit in {"w", "kw"} else 0)
-    for keyword in keywords:
+
+    score = 1
+    if dc == "power":
+        score += 20
+    if unit in {"w", "kw"}:
+        score += 10
+    if "envoy" in text or "enphase" in text:
+        score += 5
+
+    for keyword in TARGETS[target]:
         kw = _norm(keyword)
         if kw and kw in text:
-            score += 8
-    if "envoy" in text or "enphase" in text:
-        score += 4
+            score += 20 if " " in kw else 10
+
+    for excluded in _EXCLUSIONS[target]:
+        ex = _norm(excluded)
+        if ex and ex in text:
+            score -= 35
+
+    # Never mistake energy counters or electrical measurements for power.
     if any(x in text for x in ("energy", "kwh", "voltage", "current", "frequency")):
-        score -= 20
+        score -= 100
+
     return score
 
 
 def discover_power_sources(hass: HomeAssistant) -> dict[str, str | None]:
-    states = [s for s in hass.states.async_all("sensor") if not s.entity_id.startswith("sensor.jarvis_")]
+    states = [
+        s for s in hass.states.async_all("sensor")
+        if not s.entity_id.startswith("sensor.jarvis_")
+    ]
     result: dict[str, str | None] = {}
     used: set[str] = set()
+
+    # Prefer semantically exact matches. Keep one source per target and never
+    # reuse a sensor for two different meanings.
     for target in TARGETS:
         best = _Candidate()
         for state in states:
             if state.entity_id in used:
                 continue
-            score = _score(state, TARGETS[target])
+            score = _score(state, target)
             if score > best.score:
                 best = _Candidate(state.entity_id, score)
-        result[target] = best.entity_id if best.score >= 12 else None
+        result[target] = best.entity_id if best.score >= 25 else None
         if result[target]:
             used.add(result[target])
     return result
@@ -82,14 +110,23 @@ def _watts(state: Any) -> float | None:
         value = float(state.state)
     except (TypeError, ValueError):
         return None
-    unit = _norm(state.attributes.get("unit_of_measurement", "W"))
-    return value * 1000 if unit == "kw" else value
+    if not value == value or value in (float("inf"), float("-inf")):
+        return None
+    unit = _norm(state.attributes.get("unit_of_measurement", "w"))
+    if unit == "kw":
+        value *= 1000
+    return max(0.0, value)
 
 
-def _self_consumption_watts(hass: HomeAssistant, sources: dict[str, str | None]) -> float | None:
-    production = _watts(hass.states.get(sources.get("production")))
-    consumption = _watts(hass.states.get(sources.get("consumption")))
-    export = _watts(hass.states.get(sources.get("export")))
+def _values(hass: HomeAssistant) -> dict[str, float | None]:
+    sources = discover_power_sources(hass)
+    return {key: _watts(hass.states.get(entity)) for key, entity in sources.items()}
+
+
+def _self_consumption_watts(values: dict[str, float | None]) -> float | None:
+    production = values.get("production")
+    consumption = values.get("consumption")
+    export = values.get("export")
     if production is not None and consumption is not None:
         return max(0.0, min(production, consumption))
     if production is not None and export is not None:
@@ -114,33 +151,19 @@ class JarvisSolarSensor(SensorEntity):
             "export": "Grid export",
         }[key]
         self._attr_native_value = None
-        self._source: str | None = None
+
+    def _refresh(self) -> None:
+        sources = discover_power_sources(self.hass)
+        source = sources.get(self._key)
+        self._attr_native_value = _watts(self.hass.states.get(source)) if source else None
+        self._attr_extra_state_attributes = {
+            "source_entity": source,
+            "auto_discovered": source is not None,
+        }
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
         self._refresh()
-
-        @callback
-        def _changed(_event) -> None:
-            self._refresh()
-            self.async_write_ha_state()
-
-        self.async_on_remove(
-            async_track_state_change_event(
-                self.hass,
-                [s.entity_id for s in self.hass.states.async_all("sensor")],
-                _changed,
-            )
-        )
-
-    def _refresh(self) -> None:
-        self._source = discover_power_sources(self.hass).get(self._key)
-        state = self.hass.states.get(self._source) if self._source else None
-        self._attr_native_value = _watts(state)
-        self._attr_extra_state_attributes = {
-            "source_entity": self._source,
-            "auto_discovered": self._source is not None,
-        }
 
     async def async_update(self) -> None:
         self._refresh()
@@ -159,10 +182,10 @@ class JarvisSolarSurplusSensor(SensorEntity):
         self._attr_native_value = None
 
     def _refresh(self) -> None:
-        sources = discover_power_sources(self.hass)
-        production = _watts(self.hass.states.get(sources.get("production")))
-        consumption = _watts(self.hass.states.get(sources.get("consumption")))
-        export = _watts(self.hass.states.get(sources.get("export")))
+        values = _values(self.hass)
+        production = values.get("production")
+        consumption = values.get("consumption")
+        export = values.get("export")
         if production is not None and consumption is not None:
             surplus = production - consumption
         elif export is not None:
@@ -170,12 +193,8 @@ class JarvisSolarSurplusSensor(SensorEntity):
         else:
             surplus = None
         self._attr_native_value = max(0.0, surplus) if surplus is not None else None
-        self._attr_extra_state_attributes = {
-            "production_source": sources.get("production"),
-            "consumption_source": sources.get("consumption"),
-            "export_source": sources.get("export"),
-            "auto_discovered": any(sources.values()),
-        }
+        sources = discover_power_sources(self.hass)
+        self._attr_extra_state_attributes = {"auto_discovered": any(sources.values()), **sources}
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
@@ -186,8 +205,6 @@ class JarvisSolarSurplusSensor(SensorEntity):
 
 
 class JarvisSelfConsumptionInstantSensor(SensorEntity):
-    """Solar power being consumed directly by the home right now."""
-
     _attr_native_unit_of_measurement = UnitOfPower.WATT
     _attr_device_class = "power"
     _attr_should_poll = True
@@ -201,7 +218,7 @@ class JarvisSelfConsumptionInstantSensor(SensorEntity):
 
     def _refresh(self) -> None:
         sources = discover_power_sources(self.hass)
-        self._attr_native_value = _self_consumption_watts(self.hass, sources)
+        self._attr_native_value = _self_consumption_watts(_values(self.hass))
         self._attr_extra_state_attributes = {
             "production_source": sources.get("production"),
             "consumption_source": sources.get("consumption"),
@@ -215,67 +232,6 @@ class JarvisSelfConsumptionInstantSensor(SensorEntity):
 
     async def async_update(self) -> None:
         self._refresh()
-
-
-class JarvisSelfConsumptionDailySensor(RestoreEntity, SensorEntity):
-    """Daily solar self-consumption, integrated from instantaneous power."""
-
-    _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
-    _attr_device_class = "energy"
-    _attr_state_class = "total_increasing"
-    _attr_should_poll = True
-    _attr_has_entity_name = True
-
-    def __init__(self, hass: HomeAssistant, entry_id: str) -> None:
-        self.hass = hass
-        self._attr_unique_id = f"{entry_id}_solar_self_consumption_daily"
-        self._attr_name = "Solar self-consumption today"
-        self._attr_native_value = 0.0
-        self._day: date = dt_util.now().date()
-        self._last_sample: datetime | None = None
-        self._last_power: float | None = None
-
-    async def async_added_to_hass(self) -> None:
-        await super().async_added_to_hass()
-        previous = await self.async_get_last_state()
-        if previous:
-            previous_day = previous.attributes.get("day")
-            if previous_day == dt_util.now().date().isoformat():
-                try:
-                    self._attr_native_value = float(previous.state)
-                except (TypeError, ValueError):
-                    self._attr_native_value = 0.0
-                self._day = dt_util.now().date()
-        self._sample()
-
-    def _sample(self) -> None:
-        now = dt_util.now()
-        today = now.date()
-        if today != self._day:
-            self._day = today
-            self._attr_native_value = 0.0
-            self._last_sample = None
-            self._last_power = None
-
-        sources = discover_power_sources(self.hass)
-        power = _self_consumption_watts(self.hass, sources)
-        if power is not None and self._last_sample is not None and self._last_power is not None:
-            elapsed = max(0.0, (now - self._last_sample).total_seconds())
-            if elapsed <= 300:
-                self._attr_native_value += (self._last_power * elapsed) / 3_600_000.0
-        if power is not None:
-            self._last_power = power
-            self._last_sample = now
-        self._attr_extra_state_attributes = {
-            "day": self._day.isoformat(),
-            "production_source": sources.get("production"),
-            "consumption_source": sources.get("consumption"),
-            "export_source": sources.get("export"),
-            "auto_discovered": any(sources.values()),
-        }
-
-    async def async_update(self) -> None:
-        self._sample()
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities) -> None:
@@ -284,7 +240,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         + [
             JarvisSolarSurplusSensor(hass, entry.entry_id),
             JarvisSelfConsumptionInstantSensor(hass, entry.entry_id),
-            JarvisSelfConsumptionDailySensor(hass, entry.entry_id),
         ],
         update_before_add=True,
     )
