@@ -43,20 +43,23 @@
       const root = this.shadowRoot; if (!root) return;
       try {
         const states = await this._states();
-        const find = (patterns) => states.filter(s => /^sensor\./.test(s.entity_id)).find(s => { const t = (s.entity_id + " " + (s.attributes?.friendly_name || "")).toLowerCase(); return patterns.some(p => t.includes(p)) && Number.isFinite(parseFloat(s.state)); });
-        const production = find(["solar", "solaire", "production_solaire", "production solaire", "pv_", "photovolta"]);
-        const consumption = find(["consommation_electrique_actuelle", "consommation actuelle", "consommation maison", "home_consumption", "consommation"]);
-        const imp = find(["import_net_reseau_instantane", "import réseau", "grid_import", "import"]);
-        const exp = find(["export_net_reseau_instantane", "export réseau", "grid_export", "export"]);
-        const set = (id, s) => { const el = root.getElementById(id); if (!el) return; const n = this._val(s); el.textContent = n === null ? "--" : n.toFixed(0) + " W"; };
+        const sensors = states.filter(s => /^sensor\./.test(s.entity_id) && Number.isFinite(parseFloat(s.state)));
+        const text = s => (s.entity_id + " " + (s.attributes?.friendly_name || "")).toLowerCase();
+        const power = s => { const u = String(s.attributes?.unit_of_measurement || "").toLowerCase(); return u === "w" || u === "kw"; };
+        const instant = s => /instant|actuel|actuelle|current|now|power|puissance/.test(text(s));
+        const score = (s, patterns) => { const t = text(s); let n = 0; if (power(s)) n += 20; if (instant(s)) n += 15; for (const p of patterns) if (t.includes(p)) n += 10; if (/energy|énergie|daily|journal|total|today|jour|kwh/.test(t)) n -= 30; return n; };
+        const pick = patterns => sensors.filter(power).sort((a,b) => score(b,patterns)-score(a,patterns))[0] || null;
+        const production = pick(["solar","solaire","production solaire","production_solaire","pv","photovolta"]);
+        const consumption = pick(["consommation électrique actuelle","consommation_electrique_actuelle","consommation actuelle","consommation maison","home consumption","home_consumption","consommation"]);
+        const imp = pick(["import net réseau instantané","import_net_reseau_instantane","import réseau","import","grid import","grid_import"]);
+        const exp = pick(["export net réseau instantané","export_net_reseau_instantane","export réseau","export","grid export","grid_export"]);
+        const kw = s => { if (!s) return null; const n = parseFloat(s.state), u = String(s.attributes?.unit_of_measurement || "").toLowerCase(); if (!Number.isFinite(n)) return null; return u === "kw" ? n : n / 1000; };
+        const set = (id, s) => { const el = root.getElementById(id); if (!el) return; const n = kw(s); el.textContent = n === null || n < 0 || n > 10 ? "--" : n.toFixed(1) + " kW"; };
         set("production", production); set("consumption", consumption); set("import", imp); set("export", exp);
-        const p = this._val(production), c = this._val(consumption); const self = root.getElementById("selfConsumption");
-        if (self && p !== null && c !== null) self.textContent = Math.max(0, Math.min(p, c)).toFixed(0) + " W";
-        if (manualLogSafe(this)) this._log?.("✓ Énergie · entités détectées automatiquement");
+        const p = kw(production), e = kw(exp); const self = root.getElementById("selfConsumption");
+        if (self && p !== null && p >= 0 && p <= 10) { const rate = p > 0 ? Math.max(0, Math.min(100, ((p - Math.max(0,e || 0)) / p) * 100)) : 0; self.textContent = rate.toFixed(0) + "%"; }
       } catch (e) { /* Keep existing UI stable if HA states are unavailable. */ }
     };
-
-    function manualLogSafe(ctx) { return false; }
     return true;
   };
   if (!patch()) { const timer = setInterval(() => { if (patch()) clearInterval(timer); }, 50); setTimeout(() => clearInterval(timer), 10000); }
