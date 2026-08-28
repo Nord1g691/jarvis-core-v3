@@ -17,7 +17,7 @@
         back.type = "button";
         back.textContent = "‹ Retour";
         back.title = "Retour à Home Assistant";
-        back.style.cssText = "position:fixed;top:10px;left:10px;z-index:9999;min-height:34px;padding:0 12px;border:1px solid #00cfff55;border-radius:8px;background:#031322;color:#dffaff;font:600 12px system-ui;cursor:pointer;box-shadow:0 2px 10px #0006";
+        back.style.cssText = "position:fixed;top:8px;left:8px;z-index:9999;min-height:28px;height:28px;padding:0 9px;border:1px solid #00cfff55;border-radius:6px;background:#031322;color:#dffaff;font:600 10px system-ui;cursor:pointer;box-shadow:0 2px 7px #0006";
         back.onclick = () => {
           try {
             if (window.history.length > 1) window.history.back();
