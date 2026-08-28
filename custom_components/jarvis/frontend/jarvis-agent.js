@@ -57,7 +57,7 @@
         const imp = pick(["import net réseau instantané","import_net_reseau_instantane","import réseau","import","grid import","grid_import"]);
         const exp = pick(["export net réseau instantané","export_net_reseau_instantane","export réseau","export","grid export","grid_export"]);
         const kw = s => { if (!s) return null; const n = parseFloat(s.state), u = String(s.attributes?.unit_of_measurement || "").toLowerCase(); if (!Number.isFinite(n)) return null; return u === "kw" ? n : n / 1000; };
-        const set = (id, s) => { const el = root.getElementById(id); if (!el) return; const n = kw(s); const next = n === null || n < 0 || n > 10 ? "--" : n.toFixed(1) + " kW"; if (el.textContent !== next) el.textContent = next; };
+        const set = (id, s) => { const el = root.getElementById(id); if (!el) return; const n = kw(s); if (n === null || n < 0 || n > 10) return; const next = n.toFixed(1) + " kW"; if (el.textContent !== next) el.textContent = next; };
         set("production", production); set("consumption", consumption); set("import", imp); set("export", exp);
         const p = kw(production), e = kw(exp); const self = root.getElementById("selfConsumption");
         if (self && p !== null && p >= 0 && p <= 10) { const rate = p > 0 ? Math.max(0, Math.min(100, ((p - Math.max(0,e || 0)) / p) * 100)) : 0; const next = rate.toFixed(0) + "%"; if (self.textContent !== next) self.textContent = next; }
