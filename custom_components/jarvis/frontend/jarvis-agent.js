@@ -15,9 +15,9 @@
         const back = document.createElement("button");
         back.id = "jarvisBackButton";
         back.type = "button";
-        back.textContent = "‹ Retour";
+        back.textContent = "‹";
         back.title = "Retour à Home Assistant";
-        back.style.cssText = "position:fixed;top:8px;left:8px;z-index:9999;min-height:28px;height:28px;padding:0 9px;border:1px solid #00cfff55;border-radius:6px;background:#031322;color:#dffaff;font:600 10px system-ui;cursor:pointer;box-shadow:0 2px 7px #0006";
+        back.style.cssText = "position:fixed;top:8px;left:8px;z-index:9999;width:30px;height:30px;min-height:30px;padding:0;border:1px solid #00cfff55;border-radius:50%;background:#031322;color:#dffaff;font:600 16px/28px system-ui;cursor:pointer;box-shadow:0 2px 7px #0006;text-align:center";
         back.onclick = () => {
           try {
             if (window.history.length > 1) window.history.back();
