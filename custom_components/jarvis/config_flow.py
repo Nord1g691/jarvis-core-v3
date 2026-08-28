@@ -17,7 +17,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(config_entry: config_entries.ConfigEntry):
-        return OptionsFlow(config_entry)
+        return OptionsFlow()
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None):
         """Create the integration immediately; no entity IDs are required."""
