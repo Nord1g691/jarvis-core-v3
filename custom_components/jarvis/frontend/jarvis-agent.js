@@ -5,6 +5,8 @@
     if (!C || C.prototype.__jarvisAssistPipelineSelector) return !!C;
     C.prototype.__jarvisAssistPipelineSelector = true;
     const originalRender = C.prototype.render;
+    const originalUpdate = C.prototype.update;
+
     C.prototype.render = function () {
       originalRender.call(this);
 
@@ -36,6 +38,13 @@
         values.appendChild(item);
       }
       this._updateSelfConsumption?.();
+    };
+
+    // The original HUD refreshes every 5 seconds; update the added value on
+    // the same cadence without changing the Assist pipeline logic.
+    C.prototype.update = async function (manual = false) {
+      await originalUpdate.call(this, manual);
+      await this._updateSelfConsumption?.();
     };
 
     C.prototype._loadAssistPipelines = async function () {
