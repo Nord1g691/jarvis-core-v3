@@ -1,35 +1,48 @@
-/* JARVIS V24.3 — optional 144-LED outer ring overlay. Does not modify the existing 72 LEDs or voice logic. */
+/* JARVIS V24.3 — 144-LED outer ring, isolated from the existing HUD. */
 (() => {
   const INSTALL_ID = 'jarvis-outer-144';
-  const install = () => {
+
+  function install() {
     const hud = document.querySelector('jarvis-core-hud');
     const root = hud?.shadowRoot;
     const core = root?.getElementById('core');
-    if (!core || root.getElementById(INSTALL_ID)) return !!core;
+    if (!core) return false;
+    if (root.getElementById(INSTALL_ID)) return true;
 
     const style = document.createElement('style');
+    style.id = `${INSTALL_ID}-style`;
     style.textContent = `
-      #${INSTALL_ID}{position:absolute;inset:-4%;border-radius:50%;pointer-events:none;z-index:1}
-      #${INSTALL_ID} i{position:absolute;left:50%;top:50%;width:2px;height:8px;margin:-4px 0 0 -1px;border-radius:2px;background:#00eaff;box-shadow:0 0 5px #00eaff;opacity:.28;transform-origin:1px 4px;animation:jarvisOuter144 3.6s linear infinite}
-      .state-listen #${INSTALL_ID} i{background:#39ff88;box-shadow:0 0 6px #39ff88;opacity:.48;animation-duration:7s}
-      .state-think #${INSTALL_ID} i{background:#ffb000;box-shadow:0 0 8px #ffb000;opacity:.8;animation-duration:1.15s}
-      .state-speak #${INSTALL_ID} i{background:#b56cff;box-shadow:0 0 8px #b56cff;opacity:.65;animation-duration:2s}
-      @keyframes jarvisOuter144{0%{opacity:.2;filter:brightness(.8)}25%{opacity:.65;filter:brightness(1.4)}50%{opacity:.25;filter:brightness(.9)}75%{opacity:.85;filter:brightness(1.7)}100%{opacity:.2;filter:brightness(.8)}}
+      #${INSTALL_ID}{position:absolute;inset:-6%;border-radius:50%;pointer-events:none;z-index:20;overflow:visible}
+      #${INSTALL_ID} i{position:absolute;left:50%;top:50%;width:3px;height:10px;margin:-5px 0 0 -1.5px;border-radius:3px;background:#00eaff;box-shadow:0 0 8px #00eaff;opacity:.75;transform-origin:1.5px 5px}
+      .state-listen #${INSTALL_ID} i{background:#39ff88;box-shadow:0 0 9px #39ff88;opacity:.95}
+      .state-think #${INSTALL_ID} i{background:#ffb000;box-shadow:0 0 11px #ffb000;opacity:1;animation:jarvisOuterThink .32s steps(2,end) infinite}
+      .state-search #${INSTALL_ID} i{background:#00eaff;box-shadow:0 0 13px #00eaff;opacity:1;animation:jarvisOuterSearch 1.4s linear infinite}
+      .state-speak #${INSTALL_ID} i{background:#b56cff;box-shadow:0 0 12px #b56cff;opacity:.95;animation:jarvisOuterSpeak .18s ease-in-out infinite alternate}
+      @keyframes jarvisOuterThink{0%,100%{opacity:.35;transform:scaleY(.55)}50%{opacity:1;transform:scaleY(1.5)}}
+      @keyframes jarvisOuterSearch{to{filter:hue-rotate(35deg);opacity:.35}}
+      @keyframes jarvisOuterSpeak{from{transform:scaleY(.55)}to{transform:scaleY(1.7)}}
     `;
     root.appendChild(style);
 
     const ring = document.createElement('div');
     ring.id = INSTALL_ID;
-    for(let n=0;n<144;n++){
-      const led=document.createElement('i');
-      led.style.transform=`rotate(${n*2.5}deg) translateY(-${Math.min(285,Math.max(145,innerWidth*.43))}px)`;
-      led.style.animationDelay=`-${(n%24)*45}ms`;
+    const radius = Math.min(300, Math.max(150, innerWidth * .46));
+    for (let n = 0; n < 144; n++) {
+      const led = document.createElement('i');
+      led.style.transform = `rotate(${n * 2.5}deg) translateY(-${radius}px)`;
+      led.style.animationDelay = `${-(n % 36) * 25}ms`;
       ring.appendChild(led);
     }
-    core.insertBefore(ring, core.firstChild);
+    core.appendChild(ring);
     return true;
-  };
+  }
 
-  const start=()=>{ if(install()) return; setTimeout(start,250); };
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start,{once:true}); else start();
+  const boot = () => {
+    if (!install()) setTimeout(boot, 300);
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot, {once:true});
+  } else {
+    boot();
+  }
 })();
