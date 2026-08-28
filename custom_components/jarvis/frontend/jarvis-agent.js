@@ -34,6 +34,7 @@
       if (values && !this.shadowRoot.getElementById("selfConsumption")) {
         const item = document.createElement("div");
         item.className = "value";
+        item.style.gridColumn = "1 / -1";
         item.innerHTML = '<div class="num green" id="selfConsumption">--</div><div class="unit">AUTOCONSOMMATION</div>';
         values.appendChild(item);
       }
