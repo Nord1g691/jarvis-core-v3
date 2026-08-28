@@ -2,14 +2,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date, datetime
 import re
 from typing import Any
 
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import UnitOfPower
+from homeassistant.const import UnitOfEnergy, UnitOfPower
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import dt_util
 from homeassistant.helpers.event import async_track_state_change_event
+from homeassistant.helpers.restore_state import RestoreEntity
 
 
 @dataclass
@@ -83,6 +86,17 @@ def _watts(state: Any) -> float | None:
     return value * 1000 if unit == "kw" else value
 
 
+def _self_consumption_watts(hass: HomeAssistant, sources: dict[str, str | None]) -> float | None:
+    production = _watts(hass.states.get(sources.get("production")))
+    consumption = _watts(hass.states.get(sources.get("consumption")))
+    export = _watts(hass.states.get(sources.get("export")))
+    if production is not None and consumption is not None:
+        return max(0.0, min(production, consumption))
+    if production is not None and export is not None:
+        return max(0.0, production - export)
+    return None
+
+
 class JarvisSolarSensor(SensorEntity):
     _attr_native_unit_of_measurement = UnitOfPower.WATT
     _attr_device_class = "power"
@@ -105,11 +119,19 @@ class JarvisSolarSensor(SensorEntity):
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
         self._refresh()
+
         @callback
         def _changed(_event) -> None:
             self._refresh()
             self.async_write_ha_state()
-        self.async_on_remove(async_track_state_change_event(self.hass, [s.entity_id for s in self.hass.states.async_all("sensor")], _changed))
+
+        self.async_on_remove(
+            async_track_state_change_event(
+                self.hass,
+                [s.entity_id for s in self.hass.states.async_all("sensor")],
+                _changed,
+            )
+        )
 
     def _refresh(self) -> None:
         self._source = discover_power_sources(self.hass).get(self._key)
@@ -163,10 +185,106 @@ class JarvisSolarSurplusSensor(SensorEntity):
         self._refresh()
 
 
+class JarvisSelfConsumptionInstantSensor(SensorEntity):
+    """Solar power being consumed directly by the home right now."""
+
+    _attr_native_unit_of_measurement = UnitOfPower.WATT
+    _attr_device_class = "power"
+    _attr_should_poll = True
+    _attr_has_entity_name = True
+
+    def __init__(self, hass: HomeAssistant, entry_id: str) -> None:
+        self.hass = hass
+        self._attr_unique_id = f"{entry_id}_solar_self_consumption_power"
+        self._attr_name = "Solar self-consumption"
+        self._attr_native_value = None
+
+    def _refresh(self) -> None:
+        sources = discover_power_sources(self.hass)
+        self._attr_native_value = _self_consumption_watts(self.hass, sources)
+        self._attr_extra_state_attributes = {
+            "production_source": sources.get("production"),
+            "consumption_source": sources.get("consumption"),
+            "export_source": sources.get("export"),
+            "auto_discovered": any(sources.values()),
+        }
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        self._refresh()
+
+    async def async_update(self) -> None:
+        self._refresh()
+
+
+class JarvisSelfConsumptionDailySensor(RestoreEntity, SensorEntity):
+    """Daily solar self-consumption, integrated from instantaneous power."""
+
+    _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
+    _attr_device_class = "energy"
+    _attr_state_class = "total_increasing"
+    _attr_should_poll = True
+    _attr_has_entity_name = True
+
+    def __init__(self, hass: HomeAssistant, entry_id: str) -> None:
+        self.hass = hass
+        self._attr_unique_id = f"{entry_id}_solar_self_consumption_daily"
+        self._attr_name = "Solar self-consumption today"
+        self._attr_native_value = 0.0
+        self._day: date = dt_util.now().date()
+        self._last_sample: datetime | None = None
+        self._last_power: float | None = None
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        previous = await self.async_get_last_state()
+        if previous:
+            previous_day = previous.attributes.get("day")
+            if previous_day == dt_util.now().date().isoformat():
+                try:
+                    self._attr_native_value = float(previous.state)
+                except (TypeError, ValueError):
+                    self._attr_native_value = 0.0
+                self._day = dt_util.now().date()
+        self._sample()
+
+    def _sample(self) -> None:
+        now = dt_util.now()
+        today = now.date()
+        if today != self._day:
+            self._day = today
+            self._attr_native_value = 0.0
+            self._last_sample = None
+            self._last_power = None
+
+        sources = discover_power_sources(self.hass)
+        power = _self_consumption_watts(self.hass, sources)
+        if power is not None and self._last_sample is not None and self._last_power is not None:
+            elapsed = max(0.0, (now - self._last_sample).total_seconds())
+            if elapsed <= 300:
+                self._attr_native_value += (self._last_power * elapsed) / 3_600_000.0
+        if power is not None:
+            self._last_power = power
+            self._last_sample = now
+        self._attr_extra_state_attributes = {
+            "day": self._day.isoformat(),
+            "production_source": sources.get("production"),
+            "consumption_source": sources.get("consumption"),
+            "export_source": sources.get("export"),
+            "auto_discovered": any(sources.values()),
+        }
+
+    async def async_update(self) -> None:
+        self._sample()
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities) -> None:
     async_add_entities(
-        [
-            JarvisSolarSensor(hass, entry.entry_id, key) for key in TARGETS
-        ] + [JarvisSolarSurplusSensor(hass, entry.entry_id)],
+        [JarvisSolarSensor(hass, entry.entry_id, key) for key in TARGETS]
+        + [
+            JarvisSolarSurplusSensor(hass, entry.entry_id),
+            JarvisSelfConsumptionInstantSensor(hass, entry.entry_id),
+            JarvisSelfConsumptionDailySensor(hass, entry.entry_id),
+        ],
         update_before_add=True,
     )
