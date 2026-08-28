@@ -1,0 +1,12 @@
+/* JARVIS V24.3 — optional external LED layer
+   Standalone visual add-on. Does not modify the existing 72 LEDs or vocal logic.
+   To activate, load this stylesheet and create .outer-led elements around .core. */
+.outer-leds{position:absolute;inset:-7%;border-radius:50%;pointer-events:none;z-index:1}
+.outer-led{position:absolute;left:50%;top:50%;width:2px;height:12px;margin:-6px 0 0 -1px;border-radius:2px;background:#00eaff;box-shadow:0 0 7px #00eaff;opacity:.22;transform-origin:1px 6px;animation:outerLedBreath 2.8s ease-in-out infinite}
+.outer-led:nth-child(3n){animation-delay:-.9s}.outer-led:nth-child(5n){animation-delay:-1.7s}.outer-led:nth-child(7n){animation-delay:-2.3s}
+.core.state-listen .outer-led{background:#39ff88;box-shadow:0 0 8px #39ff88;opacity:.55;animation-duration:3.6s}
+.core.state-think .outer-led{background:#ffb000;box-shadow:0 0 10px #ffb000;opacity:.9;animation:outerLedThink .55s steps(2,end) infinite}
+.core.state-speak .outer-led{background:#b56cff;box-shadow:0 0 10px #b56cff;opacity:.75;animation:outerLedSpeak .7s ease-in-out infinite alternate}
+@keyframes outerLedBreath{0%,100%{opacity:.16;transform:scale(.65)}50%{opacity:.55;transform:scale(1)}}
+@keyframes outerLedThink{0%,100%{opacity:.25;transform:scale(.55)}45%{opacity:1;transform:scale(1.35)}70%{opacity:.45;transform:scale(.8)}}
+@keyframes outerLedSpeak{from{opacity:.25;transform:scale(.65)}to{opacity:1;transform:scale(1.5)}}
