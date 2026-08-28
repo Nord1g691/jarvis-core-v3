@@ -6,6 +6,7 @@
     C.prototype.__jarvisAssistPipelineSelector = true;
     const originalRender = C.prototype.render;
     const originalUpdate = C.prototype.update;
+    const originalSetState = C.prototype.setState;
 
     C.prototype.render = function () {
       originalRender.call(this);
@@ -29,6 +30,61 @@
         this._updateAutomaticEnergy?.();
         this.__jarvisEnergyTimer = setInterval(() => this._updateAutomaticEnergy?.(), 10000);
       }
+      this._installReactiveVisuals();
+    };
+
+    C.prototype._installReactiveVisuals = function () {
+      const root = this.shadowRoot; const core = root?.querySelector(".core");
+      if (!root || !core || root.getElementById("jarvisReactiveVisuals")) return;
+      const style = document.createElement("style"); style.id = "jarvisReactiveVisuals";
+      style.textContent = `
+        .core{--jcolor:#00eaff;--jsoft:#00eaff55;--jstrong:#00eaff;transition:--jcolor .35s ease,filter .35s ease}
+        .core.state-listening{--jcolor:#39ff88;--jsoft:#39ff8855;--jstrong:#39ff88;filter:drop-shadow(0 0 10px #39ff8833)}
+        .core.state-thinking{--jcolor:#ffb000;--jsoft:#ffb00055;--jstrong:#ffb000;filter:drop-shadow(0 0 12px #ffb00033)}
+        .core.state-speaking{--jcolor:#b56cff;--jsoft:#b56cff55;--jstrong:#b56cff;filter:drop-shadow(0 0 14px #b56cff44)}
+        .core.state-error{--jcolor:#ff4050;--jsoft:#ff405055;--jstrong:#ff4050}
+        .core.state-listening .orbit{animation-duration:7s}.core.state-listening .orbit2{animation-duration:10s}
+        .core.state-thinking .led{animation:thinkLed .8s ease-in-out infinite alternate}
+        .core.state-thinking .orbit{animation-duration:5s}.core.state-thinking .orbit2{animation-duration:8s}
+        .core.state-speaking .orbit{animation-duration:6s}.core.state-speaking .orbit2{animation-duration:8s}
+        .core.state-listening .glow{animation:pulseVoice .8s ease-in-out infinite}
+        .core.state-thinking .glow{animation:thinkPulse .55s ease-in-out infinite alternate}
+        .core.state-speaking .glow{animation:speakPulse .42s ease-in-out infinite alternate}
+        .reactive-radar{position:absolute;inset:7%;border:1px solid var(--jsoft);border-radius:50%;opacity:0;pointer-events:none;overflow:hidden;transition:opacity .25s}
+        .reactive-radar:before{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,transparent 0 72%,var(--jcolor) 83%,transparent 94%);animation:radarSweep 2.2s linear infinite}
+        .reactive-radar:after{content:"";position:absolute;inset:10%;border:1px dashed var(--jsoft);border-radius:50%;box-shadow:0 0 0 18px transparent,0 0 0 19px var(--jsoft);animation:radarPulse 1.6s ease-out infinite}
+        .core.state-thinking .reactive-radar,.core.state-speaking .reactive-radar{opacity:.48}
+        .core.state-listening .reactive-radar{opacity:.72}.core.state-listening .reactive-radar:before{animation-duration:1.15s}
+        .voice-bars{position:absolute;left:50%;top:50%;width:46%;height:18%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;gap:3px;opacity:0;pointer-events:none;z-index:6}
+        .voice-bars i{display:block;width:3px;height:18%;border-radius:3px;background:var(--jcolor);box-shadow:0 0 7px var(--jcolor);transition:height .15s}
+        .core.state-listening .voice-bars,.core.state-speaking .voice-bars{opacity:.95}
+        .core.state-listening .voice-bars i{animation:voiceListen .55s ease-in-out infinite alternate}
+        .core.state-speaking .voice-bars i{animation:voiceSpeak .32s ease-in-out infinite alternate}
+        @keyframes radarSweep{to{transform:rotate(360deg)}}
+        @keyframes radarPulse{50%{transform:scale(1.05);opacity:.25}}
+        @keyframes thinkLed{from{opacity:.18;filter:brightness(.8)}to{opacity:1;filter:brightness(2.4)}}
+        @keyframes pulseVoice{50%{transform:scale(1.16);box-shadow:0 0 35px var(--jcolor),0 0 100px var(--jsoft)}}
+        @keyframes thinkPulse{to{transform:scale(1.14);box-shadow:0 0 30px var(--jcolor),0 0 95px var(--jsoft)}}
+        @keyframes speakPulse{to{transform:scale(1.18);box-shadow:0 0 40px var(--jcolor),0 0 120px var(--jsoft)}}
+        @keyframes voiceListen{to{height:82%}}
+        @keyframes voiceSpeak{to{height:100%}}
+      `;
+      root.appendChild(style);
+      const radar = document.createElement("div"); radar.id = "jarvisReactiveVisuals"; radar.className = "reactive-radar"; core.insertBefore(radar, core.firstChild);
+      const bars = document.createElement("div"); bars.className = "voice-bars";
+      for(let i=0;i<15;i++){const b=document.createElement("i");b.style.animationDelay=(i*0.035)+"s";bars.appendChild(b)}
+      core.appendChild(bars);
+    };
+
+    C.prototype.setState = function (t, c) {
+      originalSetState.call(this, t, c);
+      const core = this.shadowRoot?.querySelector(".core"); if (!core) return;
+      core.classList.remove("state-listening","state-thinking","state-speaking","state-error","state-searching");
+      const s = String(t || "").toUpperCase();
+      if (s.includes("ÉCOUTE")) core.classList.add("state-listening");
+      else if (s.includes("RÉFLÉCHIT")) core.classList.add("state-thinking");
+      else if (s.includes("PARLE")) core.classList.add("state-speaking");
+      else if (s.includes("ERREUR")) core.classList.add("state-error");
     };
 
     C.prototype.update = async function (manual = false) { await originalUpdate.call(this, manual); };
