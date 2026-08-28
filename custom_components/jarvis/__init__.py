@@ -1,46 +1,35 @@
-"""JARVIS Core V3 integration."""
-
+"""JARVIS Core 3 Home Assistant integration."""
 from __future__ import annotations
 
 from pathlib import Path
 
-from homeassistant.components import frontend
+from homeassistant.components.frontend import add_extra_js_url, async_register_built_in_panel
+from homeassistant.components.http import StaticPathConfig
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-DOMAIN = "jarvis"
-PANEL_NAME = "jarvis"
+from .const import DOMAIN, FRONTEND_FILE, FRONTEND_URL, PANEL_URL
+from .conversation import JarvisConversationView
 
+PLATFORMS = ["sensor"]
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
-    """Set up JARVIS Core V3."""
-    return True
-
-
-async def async_setup_entry(hass: HomeAssistant, entry) -> bool:
-    """Set up JARVIS Core V3 from a config entry."""
-    if DOMAIN in hass.data:
-        return True
-
+    hass.data.setdefault(DOMAIN, {})
+    hass.http.register_view(JarvisConversationView(hass))
     frontend_dir = Path(__file__).parent / "frontend"
-    hass.http.register_static_path(
-        "/jarvis-core-v3",
-        str(frontend_dir),
-        cache_headers=False,
-    )
-    frontend.async_register_built_in_panel(
-        hass,
-        component_name="iframe",
-        sidebar_title="JARVIS",
-        sidebar_icon="mdi:robot",
-        frontend_url_path=PANEL_NAME,
-        config={"url": "/jarvis-core-v3/index.html"},
-        require_admin=False,
-    )
-    hass.data[DOMAIN] = True
+    await hass.http.async_register_static_paths([StaticPathConfig(FRONTEND_URL, str(frontend_dir), cache_headers=False)])
+    add_extra_js_url(hass, FRONTEND_FILE)
+    add_extra_js_url(hass, f"{FRONTEND_URL}/jarvis-agent.js")
+    add_extra_js_url(hass, f"{FRONTEND_URL}/jarvis-preferred-assist.js")
+    async_register_built_in_panel(hass, component_name="custom", sidebar_title="JARVIS", sidebar_icon="mdi:robot-outline", frontend_url_path=PANEL_URL, config={"_panel_custom": {"name": "jarvis-core-hud", "module_url": FRONTEND_FILE, "embed_iframe": False, "trust_external": False}}, require_admin=False, update=True)
     return True
 
-
-async def async_unload_entry(hass: HomeAssistant, entry) -> bool:
-    """Unload JARVIS Core V3."""
-    hass.data.pop(DOMAIN, None)
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = entry.data
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
+    return unloaded
