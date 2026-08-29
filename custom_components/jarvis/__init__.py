@@ -12,8 +12,10 @@ from .const import DOMAIN, FRONTEND_FILE, FRONTEND_URL, PANEL_URL
 from .conversation import JarvisConversationView
 
 PLATFORMS = ["sensor"]
-HUD_CONFIG_FILE = f"{FRONTEND_URL}/jarvis-hud-config.js?v=3.0.6"
-SOLAR_BRIDGE_FILE = f"{FRONTEND_URL}/jarvis-solar-bridge.js?v=3.0.6"
+ASSET_VERSION = "3.0.6"
+FRONTEND_FILE_VERSIONED = f"{FRONTEND_FILE}?v={ASSET_VERSION}"
+HUD_CONFIG_FILE = f"{FRONTEND_URL}/jarvis-hud-config.js?v={ASSET_VERSION}"
+SOLAR_BRIDGE_FILE = f"{FRONTEND_URL}/jarvis-solar-bridge.js?v={ASSET_VERSION}"
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
@@ -26,7 +28,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
         [StaticPathConfig(FRONTEND_URL, str(frontend_dir), cache_headers=False)]
     )
 
-    add_extra_js_url(hass, FRONTEND_FILE)
+    add_extra_js_url(hass, FRONTEND_FILE_VERSIONED)
     add_extra_js_url(hass, HUD_CONFIG_FILE)
     add_extra_js_url(hass, SOLAR_BRIDGE_FILE)
 
@@ -39,7 +41,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
         config={
             "_panel_custom": {
                 "name": "jarvis-core-hud",
-                "module_url": FRONTEND_FILE,
+                "module_url": FRONTEND_FILE_VERSIONED,
                 "embed_iframe": False,
                 "trust_external": False,
             }
