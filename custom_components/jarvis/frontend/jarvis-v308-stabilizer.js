@@ -43,6 +43,7 @@
       this.setState('JARVIS ÉCOUTE','#39ff88');
       const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
       if(!SR){ this.log('⚠️ Reconnaissance vocale indisponible'); this.stopConversation(); return; }
+      const timeoutMs=this.listenTimeoutMs;
       const started=Date.now();
       const finish=()=>{
         if(!this.conversationMode || this.processing) return;
@@ -55,7 +56,7 @@
       const arm=()=>{
         if(!this.conversationMode || this.processing) return;
         try{this.recognition?.stop();}catch(_){}
-        const left=Math.max(0,this.listenTimeoutMs-(Date.now()-started));
+        const left=Math.max(0,timeoutMs-(Date.now()-started));
         if(left<=0){ finish(); return; }
         try{
           const r=new SR();
@@ -111,7 +112,7 @@
       @keyframes thinkPulse{50%{transform:scale(1.16);opacity:.92}}
       @keyframes thinkBars{from{transform:scaleY(.55)}to{transform:scaleY(1.8)}}
     `;
-    const inject=el=>{ if(el.shadowRoot && !el.shadowRoot.querySelector('#jarvis-v308-style')){style.id='jarvis-v308-style';el.shadowRoot.appendChild(style.cloneNode(true));} };
+    const inject=el=>{ if(el.shadowRoot && !el.shadowRoot.querySelector('#jarvis-v308-style')){const s=style.cloneNode(true);s.id='jarvis-v308-style';el.shadowRoot.appendChild(s);} };
     document.querySelectorAll('jarvis-core-hud').forEach(inject);
   };
   if(customElements.get('jarvis-core-hud')) apply();
