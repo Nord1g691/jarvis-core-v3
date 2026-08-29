@@ -64,7 +64,6 @@
     const originalToggle = C.prototype.toggleConversation;
     const originalStart = C.prototype.startListeningWindow;
     const originalStop = C.prototype.stopConversation;
-    const originalSetState = C.prototype.setState;
 
     C.prototype.toggleConversation = function (...args) {
       const wasActive = !!this.conversationMode;
@@ -76,8 +75,6 @@
     };
 
     C.prototype.startListeningWindow = function (...args) {
-      // The first window is user-initiated. Any automatic second window after
-      // the answer closes the conversation instead of looping forever.
       if (this.__jarvisSingleTurn && this.__jarvisListeningStarted) {
         this.__jarvisSingleTurn = false;
         return originalStop.apply(this, []);
@@ -91,26 +88,45 @@
       this.__jarvisListeningStarted = false;
       return originalStop.apply(this, args);
     };
+  }
 
-    C.prototype.setState = function (text, color) {
-      originalSetState.call(this, text, color);
-      const root = this.shadowRoot;
-      const status = root?.getElementById('jarvisStatusBar');
+  // Keep the state readable outside the bright core and resilient if another
+  // frontend patch replaces setState later in the loading sequence.
+  const ensureStateBridge = () => {
+    const current = C.prototype.setState;
+    if (current && current.__jarvisStateBridge) return;
+    const wrapped = function (text, color) {
+      current?.call(this, text, color);
+      const status = this.shadowRoot?.getElementById('jarvisStatusBar');
       if (status) {
         const value = String(text || 'OPÉRATIONNEL');
         status.textContent = 'JARVIS · ' + value;
         status.style.color = color || '#00eaff';
       }
+      const root = this.shadowRoot;
+      const label = root?.getElementById('state');
+      if (label) {
+        label.style.top = '100%';
+        label.style.bottom = 'auto';
+        label.style.transform = 'translateY(10px)';
+        label.style.zIndex = '30';
+        label.style.fontWeight = '700';
+        label.style.fontSize = '13px';
+      }
     };
-  }
+    wrapped.__jarvisStateBridge = true;
+    C.prototype.setState = wrapped;
+  };
+  ensureStateBridge();
+  setInterval(ensureStateBridge, 500);
 
   const scan = () => document.querySelectorAll('jarvis-core-hud').forEach(addBar);
   scan();
   new MutationObserver(scan).observe(document.documentElement, {childList:true, subtree:true});
 
-  // Retry after the HUD creates its Shadow DOM.
   const retry = setInterval(() => {
     scan();
+    ensureStateBridge();
     const hosts = [...document.querySelectorAll('jarvis-core-hud')];
     if (hosts.length && hosts.every(h => h.shadowRoot?.getElementById('jarvisTextBar') && h.shadowRoot?.getElementById('jarvisStatusBar'))) clearInterval(retry);
   }, 250);
