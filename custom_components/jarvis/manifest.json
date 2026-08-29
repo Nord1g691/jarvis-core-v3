@@ -5,7 +5,8 @@
   "documentation": "https://github.com/Nord1g691/jarvis-core-v3",
   "issue_tracker": "https://github.com/Nord1g691/jarvis-core-v3/issues",
   "codeowners": ["@Nord1g691"],
-  "requirements": [],
   "config_flow": true,
-  "iot_class": "local_push"
+  "integration_type": "hub",
+  "iot_class": "local_polling",
+  "requirements": []
 }
