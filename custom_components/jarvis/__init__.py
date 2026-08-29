@@ -13,6 +13,9 @@ from .conversation import JarvisConversationView
 
 PLATFORMS = ["sensor"]
 HUD_CONFIG_FILE = f"{FRONTEND_URL}/jarvis-hud-config.js"
+FRONTEND_VERSION = "3.0.5-test"
+CORE_FRONTEND_FILE = f"{FRONTEND_FILE}?v={FRONTEND_VERSION}"
+HUD_CONFIG_URL = f"{HUD_CONFIG_FILE}?v={FRONTEND_VERSION}"
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
@@ -25,10 +28,9 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
         [StaticPathConfig(FRONTEND_URL, str(frontend_dir), cache_headers=False)]
     )
 
-    # Core owns conversation/state. The config layer only adds display preferences,
-    # entity discovery and presentation controls after the core is mounted.
-    add_extra_js_url(hass, FRONTEND_FILE)
-    add_extra_js_url(hass, HUD_CONFIG_FILE)
+    # Versioned URLs deliberately bust the Home Assistant/browser module cache.
+    add_extra_js_url(hass, CORE_FRONTEND_FILE)
+    add_extra_js_url(hass, HUD_CONFIG_URL)
 
     async_register_built_in_panel(
         hass,
@@ -39,7 +41,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
         config={
             "_panel_custom": {
                 "name": "jarvis-core-hud",
-                "module_url": FRONTEND_FILE,
+                "module_url": CORE_FRONTEND_FILE,
                 "embed_iframe": False,
                 "trust_external": False,
             }
