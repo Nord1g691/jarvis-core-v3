@@ -1,5 +1,6 @@
-/* JARVIS Core V3 — reliable solar card bridge.
- * Owns only the four energy cards and survives HA/frontend timing and cache issues.
+/* JARVIS Core V3 — energy binding.
+ * Hooks the actual JARVIS custom element instead of searching the HA document,
+ * so the cards receive the live hass object even when the panel is inside HA's UI tree.
  */
 (() => {
   const SOLAR = {
@@ -14,61 +15,46 @@
     const n = Number.parseFloat(state.state);
     if (!Number.isFinite(n) || n < 0 || n > 100000) return null;
     const unit = String(state.attributes?.unit_of_measurement || 'W').toLowerCase();
-    return unit === 'kw' ? n : n / 1000;
+    return unit.includes('kw') ? n : n / 1000;
   };
 
-  const render = (root, states) => {
-    if (!root || !states) return false;
-    let updated = false;
+  const render = (host) => {
+    const root = host?.shadowRoot;
+    const states = host?._hass?.states;
+    if (!root || !states) return;
     for (const [key, entityId] of Object.entries(SOLAR)) {
-      const value = toKw(states[entityId]);
       const el = root.getElementById(key);
-      if (!el || value === null) continue;
-      const text = `${value.toFixed(1)} kW`;
-      if (el.textContent !== text) el.textContent = text;
-      updated = true;
+      if (!el) continue;
+      const value = toKw(states[entityId]);
+      el.textContent = value === null ? '--' : `${value.toFixed(1)} kW`;
     }
     const production = toKw(states[SOLAR.production]);
     const fill = root.getElementById('solarFill');
-    if (fill && production !== null) {
-      fill.style.width = `${Math.max(0, Math.min(100, production / 7 * 100))}%`;
-    }
-    return updated;
+    if (fill) fill.style.width = production === null ? '0%' : `${Math.max(0, Math.min(100, production / 7 * 100))}%`;
   };
 
-  const refresh = async (host) => {
-    const root = host?.shadowRoot;
-    if (!root?.querySelector('.app')) return;
-
-    // Fast path: use the live Home Assistant state object already attached to the panel.
-    if (render(root, host?._hass?.states)) return;
-
-    // Fallback: fetch HA states directly. This also makes the bridge independent
-    // from the exact timing of the custom element's `hass` setter.
-    const token = host?._hass?.auth?.data?.access_token;
-    if (!token) return;
-    try {
-      const response = await fetch(`${location.origin}/api/states`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!response.ok) return;
-      const list = await response.json();
-      const states = Object.fromEntries((Array.isArray(list) ? list : []).map(s => [s.entity_id, s]));
-      render(root, states);
-    } catch (_) {}
+  const install = () => {
+    const ctor = customElements.get('jarvis-core-hud');
+    if (!ctor || ctor.__jarvisEnergyHooked) return;
+    const descriptor = Object.getOwnPropertyDescriptor(ctor.prototype, 'hass');
+    if (!descriptor?.set) return;
+    const originalSet = descriptor.set;
+    Object.defineProperty(ctor.prototype, 'hass', {
+      configurable: descriptor.configurable,
+      enumerable: descriptor.enumerable,
+      get: descriptor.get,
+      set(value) {
+        originalSet.call(this, value);
+        queueMicrotask(() => render(this));
+      },
+    });
+    ctor.__jarvisEnergyHooked = true;
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) render(this); });
   };
 
-  const wait = () => {
+  customElements.whenDefined('jarvis-core-hud').then(install);
+  setInterval(() => {
     const host = document.querySelector('jarvis-core-hud');
-    if (!host?.shadowRoot?.querySelector('.app')) {
-      setTimeout(wait, 300);
-      return;
-    }
-    refresh(host);
-    if (!host.__jarvisSolarBridgeTimer) {
-      host.__jarvisSolarBridgeTimer = setInterval(() => refresh(host), 5000);
-    }
-  };
-
-  wait();
+    if (host) render(host);
+  }, 5000);
 })();
