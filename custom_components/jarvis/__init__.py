@@ -12,6 +12,7 @@ from .const import DOMAIN, FRONTEND_FILE, FRONTEND_URL, PANEL_URL
 from .conversation import JarvisConversationView
 
 PLATFORMS = ["sensor"]
+HUD_CONFIG_FILE = f"{FRONTEND_URL}/jarvis-hud-config.js"
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
@@ -24,8 +25,10 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
         [StaticPathConfig(FRONTEND_URL, str(frontend_dir), cache_headers=False)]
     )
 
-    # Single frontend owner: jarvis-core.js.
+    # Core owns conversation/state. The config layer only adds display preferences,
+    # entity discovery and presentation controls after the core is mounted.
     add_extra_js_url(hass, FRONTEND_FILE)
+    add_extra_js_url(hass, HUD_CONFIG_FILE)
 
     async_register_built_in_panel(
         hass,
