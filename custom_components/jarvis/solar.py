@@ -97,7 +97,10 @@ def _watts(state: Any) -> float | None:
 
 def _values(hass: HomeAssistant) -> dict[str, float | None]:
     sources = discover_power_sources(hass)
-    values = {key: _watts(hass.states.get(entity)) for key, entity in sources.items()}
+    values = {
+        key: _watts(hass.states.get(entity)) if entity else None
+        for key, entity in sources.items()
+    }
 
     # Prefer direct home consumption. If unavailable, reconstruct it from
     # solar production and signed grid flow when possible.
@@ -163,61 +166,3 @@ class JarvisSolarSurplusSensor(SensorEntity):
     def __init__(self, hass: HomeAssistant, entry_id: str) -> None:
         self.hass = hass
         self._attr_unique_id = f"{entry_id}_solar_surplus_power"
-        self._attr_name = "Solar surplus"
-        self._attr_native_value = None
-
-    def _refresh(self) -> None:
-        values = _values(self.hass)
-        production = values.get("production")
-        consumption = values.get("consumption")
-        export = values.get("export")
-        surplus = (production - consumption) if production is not None and consumption is not None else export
-        self._attr_native_value = max(0.0, surplus) if surplus is not None else None
-        sources = discover_power_sources(self.hass)
-        self._attr_extra_state_attributes = {"auto_discovered": any(sources.values()), **sources}
-
-    async def async_added_to_hass(self) -> None:
-        await super().async_added_to_hass()
-        self._refresh()
-
-    async def async_update(self) -> None:
-        self._refresh()
-
-
-class JarvisSelfConsumptionInstantSensor(SensorEntity):
-    _attr_native_unit_of_measurement = UnitOfPower.WATT
-    _attr_device_class = "power"
-    _attr_should_poll = True
-    _attr_has_entity_name = True
-
-    def __init__(self, hass: HomeAssistant, entry_id: str) -> None:
-        self.hass = hass
-        self._attr_unique_id = f"{entry_id}_solar_self_consumption_power"
-        self._attr_name = "Solar self-consumption"
-        self._attr_native_value = None
-
-    def _refresh(self) -> None:
-        sources = discover_power_sources(self.hass)
-        values = _values(self.hass)
-        self._attr_native_value = _self_consumption_watts(values)
-        self._attr_extra_state_attributes = {
-            "production_source": sources.get("production"),
-            "consumption_source": sources.get("consumption"),
-            "export_source": sources.get("export"),
-            "auto_discovered": any(sources.values()),
-        }
-
-    async def async_added_to_hass(self) -> None:
-        await super().async_added_to_hass()
-        self._refresh()
-
-    async def async_update(self) -> None:
-        self._refresh()
-
-
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities) -> None:
-    async_add_entities(
-        [JarvisSolarSensor(hass, entry.entry_id, key) for key in TARGETS]
-        + [JarvisSolarSurplusSensor(hass, entry.entry_id), JarvisSelfConsumptionInstantSensor(hass, entry.entry_id)],
-        update_before_add=True,
-    )
