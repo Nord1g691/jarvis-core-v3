@@ -12,7 +12,7 @@ from .const import DOMAIN, FRONTEND_FILE, FRONTEND_URL, PANEL_URL
 from .conversation import JarvisConversationView
 
 PLATFORMS = ["sensor"]
-ASSET_VERSION = "3.0.6"
+ASSET_VERSION = "3.0.7"
 FRONTEND_FILE_VERSIONED = f"{FRONTEND_FILE}?v={ASSET_VERSION}"
 HUD_CONFIG_FILE = f"{FRONTEND_URL}/jarvis-hud-config.js?v={ASSET_VERSION}"
 SOLAR_BRIDGE_FILE = f"{FRONTEND_URL}/jarvis-solar-bridge.js?v={ASSET_VERSION}"
