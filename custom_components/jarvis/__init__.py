@@ -26,6 +26,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     add_extra_js_url(hass, f"{FRONTEND_URL}/jarvis-agent.js")
     add_extra_js_url(hass, f"{FRONTEND_URL}/jarvis-preferred-assist.js")
     add_extra_js_url(hass, f"{FRONTEND_URL}/jarvis-144-led-overlay.js")
+    add_extra_js_url(hass, f"{FRONTEND_URL}/jarvis-textbar.js")
     async_register_built_in_panel(
         hass,
         component_name="custom",
