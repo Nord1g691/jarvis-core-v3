@@ -12,8 +12,8 @@ from .const import DOMAIN, FRONTEND_FILE, FRONTEND_URL, PANEL_URL
 from .conversation import JarvisConversationView
 
 PLATFORMS = ["sensor"]
-HUD_CONFIG_FILE = f"{FRONTEND_URL}/jarvis-hud-config.js"
-SOLAR_BRIDGE_FILE = f"{FRONTEND_URL}/jarvis-solar-bridge.js"
+HUD_CONFIG_FILE = f"{FRONTEND_URL}/jarvis-hud-config.js?v=3.0.6"
+SOLAR_BRIDGE_FILE = f"{FRONTEND_URL}/jarvis-solar-bridge.js?v=3.0.6"
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
