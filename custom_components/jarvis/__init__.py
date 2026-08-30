@@ -12,12 +12,13 @@ from .const import DOMAIN, FRONTEND_FILE, FRONTEND_URL, PANEL_URL
 from .conversation import JarvisConversationView
 
 PLATFORMS = ["sensor"]
-ASSET_VERSION = "3.0.9"
+ASSET_VERSION = "3.0.10"
 FRONTEND_FILE_VERSIONED = f"{FRONTEND_FILE}?v={ASSET_VERSION}"
 HUD_CONFIG_FILE = f"{FRONTEND_URL}/jarvis-hud-config.js?v={ASSET_VERSION}"
 SOLAR_BRIDGE_FILE = f"{FRONTEND_URL}/jarvis-solar-bridge.js?v={ASSET_VERSION}"
 STABILIZER_FILE = f"{FRONTEND_URL}/jarvis-v308-stabilizer.js?v={ASSET_VERSION}"
 SETTINGS_FILE = f"{FRONTEND_URL}/jarvis-v308-settings.js?v={ASSET_VERSION}"
+SATELLITE_SETTINGS_FILE = f"{FRONTEND_URL}/jarvis-satellite-settings.js?v={ASSET_VERSION}"
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
@@ -35,6 +36,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     add_extra_js_url(hass, SOLAR_BRIDGE_FILE)
     add_extra_js_url(hass, STABILIZER_FILE)
     add_extra_js_url(hass, SETTINGS_FILE)
+    add_extra_js_url(hass, SATELLITE_SETTINGS_FILE)
 
     async_register_built_in_panel(
         hass,
