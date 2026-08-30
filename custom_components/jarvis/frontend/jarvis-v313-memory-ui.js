@@ -1,4 +1,4 @@
-/* JARVIS Core V3.0.13 — persistent memory UI, HUD spacing and operational label fix. */
+/* JARVIS Core V3.0.17 — persistent memory UI. Legacy storage keys/IDs are preserved for backward compatibility. */
 (() => {
   const boot = () => {
     const host = document.querySelector('jarvis-core-hud');
