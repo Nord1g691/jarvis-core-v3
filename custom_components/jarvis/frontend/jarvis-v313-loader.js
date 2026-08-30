@@ -1,5 +1,5 @@
-/* JARVIS Core V3.0.13 — single, deterministic panel entrypoint. */
-const VERSION = '3.0.13';
+/* JARVIS Core V3.0.16 — deterministic panel entrypoint. */
+const VERSION = '3.0.16';
 const BASE = '/jarvis_core/';
 
 const loadScript = (name) => new Promise((resolve, reject) => {
@@ -15,7 +15,6 @@ const loadScript = (name) => new Promise((resolve, reject) => {
   document.head.appendChild(script);
 });
 
-// The panel entrypoint must finish only after the custom element exists.
 await import(`${BASE}jarvis-core.js?v=${VERSION}`);
 await loadScript('jarvis-hud-config.js');
 await loadScript('jarvis-solar-bridge.js');
