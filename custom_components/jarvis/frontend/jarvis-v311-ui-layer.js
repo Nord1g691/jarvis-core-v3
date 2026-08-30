@@ -14,6 +14,7 @@
 
   function install(host) {
     const root=host.shadowRoot; if(!root) return;
+    // Remove only legacy V311/V308 controls. Never remove the controls installed by this version.
     root.getElementById('jarvis-settings-card')?.remove(); root.getElementById('jarvisConfigBtn')?.remove(); root.getElementById('jarvisConfig')?.remove(); root.getElementById('jarvisSatelliteBtn')?.remove();
     if(root.getElementById('jarvis-v311-ui-style')) return;
     const style=document.createElement('style'); style.id='jarvis-v311-ui-style'; style.textContent=`
