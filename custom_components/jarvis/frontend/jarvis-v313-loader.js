@@ -1,5 +1,5 @@
-/* JARVIS Core V3.0.17 — single deterministic panel entrypoint. */
-const VERSION = '3.0.17';
+/* JARVIS Core V3.0.18 — single deterministic panel entrypoint. */
+const VERSION = '3.0.18';
 const BASE = '/jarvis_core/';
 
 const loadScript = (name) => new Promise((resolve, reject) => {
