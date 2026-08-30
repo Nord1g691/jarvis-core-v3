@@ -1,7 +1,7 @@
 {
   "domain": "jarvis",
   "name": "JARVIS Core V3",
-  "version": "3.0.13",
+  "version": "3.0.14",
   "documentation": "https://github.com/Nord1g691/jarvis-core-v3",
   "issue_tracker": "https://github.com/Nord1g691/jarvis-core-v3/issues",
   "codeowners": ["@Nord1g691"],
