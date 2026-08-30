@@ -31,7 +31,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
         config={
             "_panel_custom": {
                 "name": "jarvis-core-hud",
-                "js_url": PANEL_MODULE,
+                "module_url": PANEL_MODULE,
                 "embed_iframe": False,
                 "trust_external": False,
             }
