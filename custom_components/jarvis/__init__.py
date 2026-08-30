@@ -1,21 +1,17 @@
 """JARVIS Core V3 Home Assistant integration."""
 from __future__ import annotations
 from pathlib import Path
-from homeassistant.components.frontend import add_extra_js_url, async_register_built_in_panel
+from homeassistant.components.frontend import async_register_built_in_panel
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from .const import DOMAIN, FRONTEND_FILE, FRONTEND_URL, PANEL_URL
+from .const import DOMAIN, FRONTEND_URL, PANEL_URL
 from .conversation import JarvisConversationView
 from .memory import JarvisMemoryView
 
 PLATFORMS = ["sensor"]
 ASSET_VERSION = "3.0.13"
-FRONTEND_FILE_VERSIONED = f"{FRONTEND_FILE}?v={ASSET_VERSION}"
-HUD_CONFIG_FILE = f"{FRONTEND_URL}/jarvis-hud-config.js?v={ASSET_VERSION}"
-SOLAR_BRIDGE_FILE = f"{FRONTEND_URL}/jarvis-solar-bridge.js?v={ASSET_VERSION}"
-UI_LAYER_FILE = f"{FRONTEND_URL}/jarvis-v311-ui-layer.js?v={ASSET_VERSION}"
-MEMORY_UI_FILE = f"{FRONTEND_URL}/jarvis-v313-memory-ui.js?v={ASSET_VERSION}"
+PANEL_MODULE = f"{FRONTEND_URL}/jarvis-v313-loader.js?v={ASSET_VERSION}"
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Set up JARVIS Core V3 and register its single frontend panel."""
@@ -26,14 +22,6 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     await hass.http.async_register_static_paths([
         StaticPathConfig(FRONTEND_URL, str(frontend_dir), cache_headers=False)
     ])
-    for asset in (
-        FRONTEND_FILE_VERSIONED,
-        HUD_CONFIG_FILE,
-        SOLAR_BRIDGE_FILE,
-        UI_LAYER_FILE,
-        MEMORY_UI_FILE,
-    ):
-        add_extra_js_url(hass, asset)
     async_register_built_in_panel(
         hass,
         component_name="custom",
@@ -43,7 +31,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
         config={
             "_panel_custom": {
                 "name": "jarvis-core-hud",
-                "module_url": FRONTEND_FILE_VERSIONED,
+                "module_url": PANEL_MODULE,
                 "embed_iframe": False,
                 "trust_external": False,
             }
