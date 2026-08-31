@@ -11,7 +11,7 @@ from .memory import JarvisMemoryView
 
 PLATFORMS = ["sensor"]
 ASSET_VERSION = "3.0.18"
-PANEL_MODULE = f"{FRONTEND_URL}/jarvis-v313-loader.js?v={ASSET_VERSION}"
+PANEL_MODULE = f"{FRONTEND_URL}/jarvis-v318-panel.js?v={ASSET_VERSION}"
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """Set up JARVIS Core V3 and register its single frontend panel."""
@@ -30,7 +30,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
         frontend_url_path=PANEL_URL,
         config={
             "_panel_custom": {
-                "name": "jarvis-core-hud",
+                "name": "jarvis-v318-panel",
                 "module_url": PANEL_MODULE,
                 "embed_iframe": False,
                 "trust_external": False,
