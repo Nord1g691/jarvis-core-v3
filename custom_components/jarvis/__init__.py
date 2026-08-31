@@ -10,7 +10,7 @@ from .conversation import JarvisConversationView
 from .memory import JarvisMemoryView
 
 PLATFORMS = ["sensor"]
-ASSET_VERSION = "3.0.18"
+ASSET_VERSION = "3.0.19"
 PANEL_MODULE = f"{FRONTEND_URL}/jarvis-v318-panel.js?v={ASSET_VERSION}"
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
