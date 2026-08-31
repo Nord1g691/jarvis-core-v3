@@ -16,13 +16,13 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Install Home Assistant
+      - name: Install Home Assistant validation environment
         run: |
           python -m pip install --upgrade pip
           python -m pip install homeassistant
-          # Home Assistant's 2026.2.x conversation/assist modules require
-          # HassIL, but it is not pulled in by the base PyPI install.
-          python -m pip install "hassil==3.11.0"
+          # Match the HassIL version pinned by Home Assistant 2026.2.x.
+          # It provides the hassil.fuzzy API imported by HA conversation.
+          python -m pip install "hassil==3.5.0"
 
       - name: Compile integration
         run: python -m compileall -q custom_components/jarvis
