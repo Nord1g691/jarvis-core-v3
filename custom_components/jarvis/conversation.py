@@ -4,7 +4,7 @@ from aiohttp import web
 from homeassistant.components import assist_pipeline, conversation
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.core import HomeAssistant
-from .memory import add_memory, extract_explicit_memory, search_memories, remove_memories
+from .memory import add_memory_async, extract_explicit_memory, search_memories_async, remove_memories_async
 
 class JarvisConversationView(HomeAssistantView):
     url = "/api/jarvis/conversation"
@@ -25,11 +25,11 @@ class JarvisConversationView(HomeAssistantView):
         if preferred_agent:
             return preferred_agent, preferred.name
         return conversation.HOME_ASSISTANT_AGENT, preferred.name
-    def _memory_context(self, text: str) -> str:
+    async def _memory_context(self, text: str) -> str:
         words = [w for w in text.casefold().split() if len(w) > 3]
         if not words:
             return ""
-        matches = search_memories(self.hass, " ".join(words[-8:]), 5)
+        matches = await search_memories_async(self.hass, " ".join(words[-8:]), 5)
         if not matches:
             return ""
         lines = "\n".join(f"- {item['text']}" for item in matches)
@@ -46,14 +46,14 @@ class JarvisConversationView(HomeAssistantView):
         if explicit:
             action, payload = explicit
             if action == "remember":
-                item = add_memory(self.hass, payload)
+                item = await add_memory_async(self.hass, payload)
                 return self.json({"response": {"speech": {"plain": {"speech": "C'est retenu."}}}, "memory_action": "remember", "memory": item, "conversation_id": data.get("conversation_id")})
             if action == "forget":
-                removed = remove_memories(self.hass, payload)
+                removed = await remove_memories_async(self.hass, payload)
                 speech = "C'est oublié." if removed else "Je ne trouve pas cette information dans ma mémoire."
                 return self.json({"response": {"speech": {"plain": {"speech": speech}}}, "memory_action": "forget", "removed": removed, "conversation_id": data.get("conversation_id")})
             if action == "recall":
-                memories = search_memories(self.hass, "", 20)
+                memories = await search_memories_async(self.hass, "", 20)
                 speech = "Je n'ai encore rien en mémoire." if not memories else "Voici ce que j'ai mémorisé : " + "; ".join(item["text"] for item in memories[:10])
                 return self.json({"response": {"speech": {"plain": {"speech": speech}}}, "memory_action": "recall", "memories": memories, "conversation_id": data.get("conversation_id")})
         conversation_id = data.get("conversation_id")
@@ -62,7 +62,7 @@ class JarvisConversationView(HomeAssistantView):
         requested_pipeline = str(requested_pipeline).strip() or None if requested_pipeline is not None else None
         try:
             agent_id, pipeline_name = self._select_agent(requested_pipeline)
-            contextual_text = self._memory_context(text)
+            contextual_text = await self._memory_context(text)
             payload = {"text": contextual_text + text if contextual_text else text, "agent_id": agent_id}
             if conversation_id:
                 payload["conversation_id"] = conversation_id
