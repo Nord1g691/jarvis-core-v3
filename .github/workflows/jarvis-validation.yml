@@ -1,0 +1,46 @@
+name: JARVIS validation
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  python-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Home Assistant
+        run: python -m pip install --upgrade pip && python -m pip install homeassistant
+
+      - name: Compile integration
+        run: python -m compileall -q custom_components/jarvis
+
+      - name: Import integration and config flow
+        run: |
+          python - <<'PY'
+          import importlib
+          integration = importlib.import_module("custom_components.jarvis")
+          flow = importlib.import_module("custom_components.jarvis.config_flow")
+          from homeassistant.config_entries import ConfigFlow
+
+          assert hasattr(integration, "async_setup")
+          assert issubclass(flow.ConfigFlow, ConfigFlow)
+          assert flow.ConfigFlow.domain == "jarvis"
+          print("JARVIS integration import: OK")
+          print("JARVIS config flow import: OK")
+          PY
+
+  hassfest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Run Hassfest
+        uses: home-assistant/actions/hassfest@master
