@@ -1,75 +1,15 @@
-/* JARVIS HUD Config Layer
- * Keeps the existing Core conversation/visual engine intact.
- * Adds user-facing display preferences, voice controls, satellite controls,
- * entity discovery and a richer analytical "RÉFLÉCHIT" visual mode.
+/* JARVIS Core V3.0.18 — legacy config compatibility shim.
+ * The authoritative settings UI is owned by jarvis-v313-loader.js.
+ * This file intentionally creates no second settings button/panel.
  */
 (() => {
-  const KEY='jarvis_hud_preferences_v1';
-  const SAT_KEY='jarvis_satellite_preferences_v1';
-  const DEFAULT={visible:{energy:true,voice:true,categories:true,log:true},order:['energy','voice','categories','log']};
-  const SAT_DEFAULT={enabled:true,device:'auto'};
-  const labels={energy:'⚡ Énergie',voice:'🎙️ Commandes vocales',categories:'🧩 Catégories',log:'🖥️ Console / Log'};
-  const domains={light:['💡','Lumières'],switch:['🔘','Interrupteurs'],climate:['🌡️','Climatisation'],media_player:['🎵','Médias'],cover:['🪟','Volets'],camera:['📷','Caméras'],fan:['🌀','Ventilation'],water_heater:['🚿','Chauffe-eau'],vacuum:['🧹','Aspirateurs'],lock:['🔒','Serrures'],alarm_control_panel:['🛡️','Sécurité'],sensor:['📊','Capteurs'],binary_sensor:['◉','Capteurs binaires'],number:['🔢','Réglages'],input_boolean:['☑','Commandes'],scene:['🎬','Scènes'],script:['⚙️','Scripts'],input_number:['🔢','Réglages']};
-  const solar={production:'sensor.envoy_122323101280_production_solaire_instantanee',consumption:'sensor.envoy_122323101280_consommation_electrique_actuelle',import:'sensor.puissance_import_reseau',export:'sensor.puissance_export_reseau'};
-  const load=()=>{try{return Object.assign({},DEFAULT,JSON.parse(localStorage.getItem(KEY)||'null'))}catch(_){return JSON.parse(JSON.stringify(DEFAULT))}};
-  const loadSat=()=>{try{return Object.assign({},SAT_DEFAULT,JSON.parse(localStorage.getItem(SAT_KEY)||'null'))}catch(_){return {...SAT_DEFAULT}}};
-  const save=p=>localStorage.setItem(KEY,JSON.stringify(p));
-  const saveSat=p=>localStorage.setItem(SAT_KEY,JSON.stringify(p));
-  const wait=()=>{const host=document.querySelector('jarvis-core-hud');if(!host||!host.shadowRoot||!host.shadowRoot.querySelector('.app'))return setTimeout(wait,300);install(host);setTimeout(()=>discover(host),700);setInterval(()=>{if(host.isConnected){updateSolar(host);discover(host)}},10000)};
-  function install(host){const root=host.shadowRoot;if(root.getElementById('jarvisConfigBtn'))return;
-    const style=document.createElement('style');style.textContent=`
-      .jarvis-config-btn{position:fixed;top:12px;right:12px;z-index:10002;width:36px;height:36px;min-height:36px;margin:0;padding:0;border:1px solid #00eaff55;border-radius:9px;background:#020711dd;color:#00eaff;font-size:16px}
-      .jarvis-config{position:fixed;top:56px;right:12px;z-index:10003;width:min(360px,calc(100vw - 24px));max-height:82vh;overflow:auto;padding:12px;border:1px solid #00eaff44;border-radius:12px;background:#031322f5;backdrop-filter:blur(12px);box-shadow:0 15px 40px #0009;display:none}
-      .jarvis-config.open{display:block}.jc-title{font-size:10px;letter-spacing:2px;color:#8bd6ea;margin-bottom:8px}
-      .jc-row{display:grid;grid-template-columns:28px 1fr 32px 32px;align-items:center;gap:5px;padding:6px 0;border-bottom:1px solid #00eaff12;font-size:11px}.jc-row button{width:32px;min-height:30px;margin:0}
-      .jc-eye{cursor:pointer;color:#39ff88}.jc-eye.off{color:#506773}.jc-save{margin-top:10px!important;min-height:36px!important;color:#00eaff!important}
-      .jc-cats{margin-top:12px;border-top:1px solid #00eaff22;padding-top:10px}.jc-cat{font-size:9px;letter-spacing:1px;color:#72ffad;margin:8px 0 3px}
-      .jc-entity{display:flex;justify-content:space-between;gap:8px;padding:4px 0;color:#b9d8e2;font-size:9px}.jc-entity button{width:26px;min-height:26px;margin:0}
-      .jarvis-context{margin-top:12px}.jc-hidden{display:none!important}.jc-voice,.jc-sat{margin-top:10px;padding-top:10px;border-top:1px solid #00eaff22}
-      .jc-voice button,.jc-sat button{width:31%;min-height:32px;margin:0 1%;font-size:9px}.jc-voice .active,.jc-sat .active{border-color:#39ff88;color:#39ff88;box-shadow:0 0 10px #39ff8833}
-      .jc-clear{margin-top:8px!important}.jc-temporary{outline:1px solid #b56cff55;box-shadow:0 0 16px #b56cff22}
-      .jc-sat-state{font-size:9px;color:#72ffad;margin:7px 0}.jc-refresh{width:100%!important;margin:7px 0 0!important}
-      /* Rich RÉFLÉCHIT / search visual: orthogonal radar + moving particles. */
-      .jarvis-search-field{position:absolute;inset:8%;border-radius:50%;pointer-events:none;z-index:2;opacity:0;transition:opacity .25s}
-      .core.state-think .jarvis-search-field{opacity:1}
-      .js-radar-h,.js-radar-v{position:absolute;left:50%;top:50%;background:linear-gradient(90deg,transparent,#ffb000cc,transparent);box-shadow:0 0 10px #ffb00066}
-      .js-radar-h{width:100%;height:1px;transform-origin:center;animation:jsScanH 2.4s ease-in-out infinite alternate}
-      .js-radar-v{width:1px;height:100%;background:linear-gradient(0deg,transparent,#ffb000cc,transparent);animation:jsScanV 3.1s ease-in-out infinite alternate}
-      .js-radar-ring{position:absolute;inset:7%;border:1px solid #ffb00022;border-radius:50%;animation:jsRadarPulse 2.2s ease-in-out infinite}
-      .js-particles{position:absolute;inset:0;overflow:visible}
-      .js-particle{position:absolute;left:50%;top:50%;width:3px;height:3px;border-radius:50%;background:#ffb000;box-shadow:0 0 6px #ffb000,0 0 13px #ffb00066;opacity:.85;animation:jsParticle var(--dur) ease-in-out infinite;animation-delay:var(--delay)}
-      .core.state-think .glow{animation:pulseThink .55s ease-in-out infinite alternate}
-      .core.state-think .ring{animation-duration:7s}.core.state-think .orbit{animation-duration:4.5s}
-      @keyframes jsScanH{0%{transform:translate(-50%,-50%) scaleX(.25)}50%{transform:translate(-50%,-50%) scaleX(1)}100%{transform:translate(-50%,-50%) scaleX(.25)}}
-      @keyframes jsScanV{0%{transform:translate(-50%,-50%) scaleY(.2)}50%{transform:translate(-50%,-50%) scaleY(1)}100%{transform:translate(-50%,-50%) scaleY(.2)}}
-      @keyframes jsRadarPulse{50%{inset:15%;opacity:.9}100%{inset:7%;opacity:.35}}
-      @keyframes jsParticle{0%{transform:rotate(var(--a)) translateX(45px) scale(.6);opacity:.15}30%{transform:rotate(calc(var(--a) + 22deg)) translateX(var(--d1)) scale(1);opacity:1}55%{transform:rotate(calc(var(--a) - 35deg)) translateX(var(--d2)) scale(1.25);opacity:.9}75%{transform:rotate(calc(var(--a) + 65deg)) translateX(var(--d3)) scale(.8);opacity:1}100%{transform:rotate(calc(var(--a) + 120deg)) translateX(45px) scale(.5);opacity:.12}}
-      @keyframes pulseThink{to{transform:scale(1.14);opacity:.9}}
-    `;root.appendChild(style);
-    const btn=document.createElement('button');btn.id='jarvisConfigBtn';btn.className='jarvis-config-btn';btn.type='button';btn.textContent='⚙';btn.title='Réglages JARVIS';
-    const panel=document.createElement('div');panel.id='jarvisConfig';panel.className='jarvis-config';panel.innerHTML='<div class="jc-title">⚙ RÉGLAGES AFFICHAGE</div><div id="jcRows"></div><button class="jc-save" id="jcSave">ENREGISTRER</button><div class="jc-voice"><div class="jc-title">🎙️ VOCAL</div><button id="jcVoiceOn">ON</button><button id="jcVoiceOff">OFF</button><button id="jcVoiceMute">MUTE</button></div><div class="jc-sat"><div class="jc-title">🛰️ SATELLITE</div><div class="jc-sat-state" id="jcSatState"></div><button id="jcSatAuto">AUTO</button><button id="jcSatIphone">IPHONE</button><button id="jcSatIpad">IPAD</button><button class="jc-refresh" id="jcSatRefresh">↻ RÉACTUALISER</button></div><div class="jc-cats"><div class="jc-title">ENTITÉS DÉCOUVERTES</div><div id="jcEntities">Recherche…</div></div>';
-    root.querySelector('.app').append(btn,panel);
-    let prefs=load(),draft=JSON.parse(JSON.stringify(prefs)),sat=loadSat();
-    const render=()=>{const box=panel.querySelector('#jcRows');box.innerHTML='';draft.order.forEach((key,i)=>{const row=document.createElement('div');row.className='jc-row';const eye=document.createElement('button');eye.className='jc-eye'+(draft.visible[key]?'':' off');eye.textContent=draft.visible[key]?'●':'○';eye.onclick=()=>{draft.visible[key]=!draft.visible[key];render()};const name=document.createElement('span');name.textContent=labels[key];const up=document.createElement('button');up.textContent='↑';up.disabled=i===0;up.onclick=()=>{[draft.order[i-1],draft.order[i]]=[draft.order[i],draft.order[i-1]];render()};const down=document.createElement('button');down.textContent='↓';down.disabled=i===draft.order.length-1;down.onclick=()=>{[draft.order[i+1],draft.order[i]]=[draft.order[i],draft.order[i+1]];render()};row.append(eye,name,up,down);box.append(row)});renderSat()};
-    const renderSat=()=>{panel.querySelector('#jcSatState').textContent=`État : ${sat.enabled?'ACTIVÉ':'DÉSACTIVÉ'} · Mode : ${sat.device.toUpperCase()}`;['Auto','Iphone','Ipad'].forEach(x=>panel.querySelector('#jcSat'+x).classList.toggle('active',sat.enabled&&sat.device===x.toLowerCase()))};
-    btn.onclick=()=>{draft=JSON.parse(JSON.stringify(prefs));sat=loadSat();panel.classList.toggle('open');if(panel.classList.contains('open'))render()};
-    panel.querySelector('#jcSave').onclick=()=>{prefs=JSON.parse(JSON.stringify(draft));save(prefs);panel.classList.remove('open');apply(host,prefs);safeLog(host,'⚙️ Affichage enregistré')};
-    panel.querySelector('#jcVoiceOn').onclick=()=>{host.muted=false;host.conversationMode=false;safeLog(host,'🎙️ Vocal activé');host.toggleConversation?.()};
-    panel.querySelector('#jcVoiceOff').onclick=()=>{host.stopConversation?.();safeLog(host,'🎙️ Vocal désactivé')};
-    panel.querySelector('#jcVoiceMute').onclick=()=>{host.muted=true;window.speechSynthesis?.cancel();host.stopVoiceViz?.();safeLog(host,'🔇 Sortie vocale en mute')};
-    const setSat=(device)=>{sat.enabled=true;sat.device=device;saveSat(sat);renderSat();applySatellite(host,sat);safeLog(host,`🛰️ Satellite · ${device.toUpperCase()}`)};
-    panel.querySelector('#jcSatAuto').onclick=()=>setSat('auto');panel.querySelector('#jcSatIphone').onclick=()=>setSat('iphone');panel.querySelector('#jcSatIpad').onclick=()=>setSat('ipad');
-    panel.querySelector('#jcSatRefresh').onclick=()=>{sat=loadSat();renderSat();applySatellite(host,sat);safeLog(host,'🛰️ Satellite · réactualisé')};
-    apply(host,prefs);applySatellite(host,sat);addClearLog(host);addCommandLog(host);installThinkVisual(host);
-  }
-  function installThinkVisual(host){const root=host.shadowRoot,core=root.getElementById('core');if(!core||root.getElementById('jarvisSearchField'))return;const field=document.createElement('div');field.id='jarvisSearchField';field.className='jarvis-search-field';field.innerHTML='<div class="js-radar-ring"></div><div class="js-radar-h"></div><div class="js-radar-v"></div><div class="js-particles"></div>';core.appendChild(field);const p=field.querySelector('.js-particles');for(let i=0;i<34;i++){const e=document.createElement('i');e.className='js-particle';e.style.setProperty('--a',`${Math.round(Math.random()*360)}deg`);e.style.setProperty('--d1',`${70+Math.random()*90}px`);e.style.setProperty('--d2',`${25+Math.random()*145}px`);e.style.setProperty('--d3',`${55+Math.random()*120}px`);e.style.setProperty('--dur',`${1.4+Math.random()*2.4}s`);e.style.setProperty('--delay',`${-Math.random()*3}s`);p.appendChild(e)}}
-  function applySatellite(host,p){const core=host.shadowRoot.getElementById('core');if(!core)return;core.classList.toggle('satellite-disabled',!p.enabled);core.dataset.satelliteMode=p.device;const s1=core.querySelector('.sat1'),s2=core.querySelector('.sat2');if(!p.enabled){[s1,s2].forEach(e=>{if(e)e.style.display='none'})}else{[s1,s2].forEach(e=>{if(e)e.style.display=''})}}
-  function addClearLog(host){const root=host.shadowRoot,log=root.getElementById('log');if(!log||root.getElementById('jcClearLog'))return;const b=document.createElement('button');b.id='jcClearLog';b.className='jc-clear';b.textContent='EFFACER LA LOG';b.onclick=()=>{log.textContent='[SYSTEM] Log effacée';safeLog(host,'🧹 Log effacée')};log.parentElement?.append(b)}
-  function addCommandLog(host){const input=host.shadowRoot.getElementById('jarvisTextInput');if(!input||input.dataset.jcLog)return;input.dataset.jcLog='1';const old=host.process.bind(host);host.process=async text=>{safeLog(host,'🗣️ VOUS · '+text);safeLog(host,'🧠 Compréhension en cours…');return old(text)}}
-  function apply(host,p){const root=host.shadowRoot,grid=root.querySelector('.grid');if(!grid)return;const cards=[...grid.querySelectorAll('.card')];const find=t=>cards.find(c=>c.querySelector('.title')?.textContent.toLowerCase().includes(t));const map={energy:find('énergie solaire'),voice:find('commandes jarvis'),log:find('console jarvis'),categories:root.getElementById('jarvisCategories')};p.order.map(k=>map[k]).filter(Boolean).forEach(el=>grid.appendChild(el));Object.entries(map).forEach(([k,el])=>{if(el)el.classList.toggle('jc-hidden',!p.visible[k])})}
-  function safeLog(host,text){try{host.log(text)}catch(_){} }
-  function valueToKw(s){if(!s)return null;const n=parseFloat(s.state);if(!Number.isFinite(n))return null;const u=String(s.attributes?.unit_of_measurement||'').toLowerCase();return u==='kw'?n:n/1000}
-  async function updateSolar(host){const states=host._hass?.states||{};let found=0;Object.entries(solar).forEach(([key,id])=>{const s=states[id];const n=valueToKw(s);const el=host.shadowRoot.getElementById(key);if(n!==null&&el){el.textContent=n.toFixed(1)+' kW';found++}});const p=valueToKw(states[solar.production]);const fill=host.shadowRoot.getElementById('solarFill');if(fill&&p!==null)fill.style.width=Math.max(0,Math.min(100,p/7*100))+'%';if(found)host._jcSolarLogged||(safeLog(host,`⚡ Solaire · ${found}/4 valeurs reçues`),host._jcSolarLogged=true)}
-  function discover(host){const root=host.shadowRoot,states=host._hass?.states||{};let sec=root.getElementById('jarvisCategories');if(!sec){sec=document.createElement('section');sec.id='jarvisCategories';sec.className='card jarvis-context';sec.innerHTML='<div class="title">🧩 CATÉGORIES · DÉCOUVERTE AUTOMATIQUE</div><div id="jcCategoryList"></div>';root.querySelector('.grid')?.append(sec)}const grouped={};Object.entries(states).forEach(([id,s])=>{const d=id.split('.')[0];if(!domains[d])return;(grouped[d]??=[]).push([id,s])});const list=sec.querySelector('#jcCategoryList');if(!list)return;list.innerHTML='';const visibleCats=Object.entries(grouped).sort((a,b)=>domains[a[0]][1].localeCompare(domains[b[0]][1],'fr'));visibleCats.forEach(([d,items])=>{const box=document.createElement('div');box.className='jc-cat';box.textContent=`${domains[d][0]} ${domains[d][1]} · ${items.length}`;items.slice(0,20).forEach(([id,s])=>{const row=document.createElement('div');row.className='jc-entity';const name=host._hass?.formatEntityName?host._hass.formatEntityName(s,undefined):s.attributes?.friendly_name||id;row.innerHTML=`<span>${name}</span><span>${s.state}</span>`;box.append(row)});list.append(box)});safeLog(host,`🔎 Entités · ${Object.keys(states).length} disponibles · ${visibleCats.length} catégories`)}
-  wait();
+  const VERSION='3.0.18';
+  const LEGACY_KEY='jarvis_hud_preferences_v1';
+  const TARGET_KEY='jarvis_ui_preferences_v311';
+  try {
+    const legacy=JSON.parse(localStorage.getItem(LEGACY_KEY)||'null');
+    if(legacy && !localStorage.getItem(TARGET_KEY)) {
+      localStorage.setItem(TARGET_KEY,JSON.stringify(legacy));
+    }
+  } catch(_) {}
 })();
