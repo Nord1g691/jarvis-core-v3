@@ -11,7 +11,6 @@ from aiohttp import web
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.core import HomeAssistant
 
-
 MEMORY_FILE = "jarvis_memory.json"
 MAX_ITEMS = 500
 
@@ -34,25 +33,28 @@ def _load(hass: HomeAssistant) -> list[dict[str, Any]]:
 def _save(hass: HomeAssistant, items: list[dict[str, Any]]) -> None:
     path = _path(hass)
     tmp = path.with_suffix(".tmp")
-    tmp.write_text(
-        json.dumps(items[-MAX_ITEMS:], ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
+    tmp.write_text(json.dumps(items[-MAX_ITEMS:], ensure_ascii=False, indent=2), encoding="utf-8")
     tmp.replace(path)
 
 
-def add_memory(
-    hass: HomeAssistant, text: str, category: str = "personal"
-) -> dict[str, Any]:
+async def _load_async(hass: HomeAssistant) -> list[dict[str, Any]]:
+    return await hass.async_add_executor_job(_load, hass)
+
+
+async def _save_async(hass: HomeAssistant, items: list[dict[str, Any]]) -> None:
+    await hass.async_add_executor_job(_save, hass, items)
+
+
+async def add_memory_async(hass: HomeAssistant, text: str, category: str = "personal") -> dict[str, Any]:
     text = " ".join(text.split()).strip()
     if not text:
         raise ValueError("empty memory")
-    items = _load(hass)
+    items = await _load_async(hass)
     now = datetime.now(timezone.utc).isoformat()
     for item in items:
         if item.get("text", "").casefold() == text.casefold():
             item["updated_at"] = now
-            _save(hass, items)
+            await _save_async(hass, items)
             return item
     item = {
         "id": f"m-{int(datetime.now(timezone.utc).timestamp() * 1000)}",
@@ -62,42 +64,36 @@ def add_memory(
         "updated_at": now,
     }
     items.append(item)
-    _save(hass, items)
+    await _save_async(hass, items)
     return item
 
 
-def remove_memories(hass: HomeAssistant, query: str) -> int:
+async def remove_memories_async(hass: HomeAssistant, query: str) -> int:
     query = " ".join(query.split()).strip().casefold()
     if not query:
         return 0
-    items = _load(hass)
-    kept = [
-        item
-        for item in items
-        if query not in str(item.get("text", "")).casefold()
-    ]
+    items = await _load_async(hass)
+    kept = [item for item in items if query not in str(item.get("text", "")).casefold()]
     removed = len(items) - len(kept)
     if removed:
-        _save(hass, kept)
+        await _save_async(hass, kept)
     return removed
 
 
-def remove_memory_by_id(hass: HomeAssistant, memory_id: str) -> int:
+async def remove_memory_by_id_async(hass: HomeAssistant, memory_id: str) -> int:
     memory_id = str(memory_id).strip()
     if not memory_id:
         return 0
-    items = _load(hass)
+    items = await _load_async(hass)
     kept = [item for item in items if str(item.get("id", "")) != memory_id]
     removed = len(items) - len(kept)
     if removed:
-        _save(hass, kept)
+        await _save_async(hass, kept)
     return removed
 
 
-def search_memories(
-    hass: HomeAssistant, query: str = "", limit: int = 8
-) -> list[dict[str, Any]]:
-    items = _load(hass)
+async def search_memories_async(hass: HomeAssistant, query: str = "", limit: int = 8) -> list[dict[str, Any]]:
+    items = await _load_async(hass)
     query = " ".join(query.split()).strip().casefold()
     if not query:
         return list(reversed(items[-limit:]))
@@ -108,16 +104,11 @@ def search_memories(
         score = sum(1 for term in terms if term in text)
         if score:
             scored.append((score, item))
-    scored.sort(
-        key=lambda pair: (pair[0], pair[1].get("updated_at", "")),
-        reverse=True,
-    )
+    scored.sort(key=lambda pair: (pair[0], pair[1].get("updated_at", "")), reverse=True)
     return [item for _, item in scored[:limit]]
 
 
 class JarvisMemoryView(HomeAssistantView):
-    """REST API for explicit persistent JARVIS memory."""
-
     url = "/api/jarvis/memory"
     name = "api:jarvis:memory"
     requires_auth = True
@@ -131,7 +122,7 @@ class JarvisMemoryView(HomeAssistantView):
             limit = max(1, min(50, int(request.query.get("limit", "20"))))
         except ValueError:
             limit = 20
-        return self.json({"memories": search_memories(self.hass, query, limit)})
+        return self.json({"memories": await search_memories_async(self.hass, query, limit)})
 
     async def post(self, request: web.Request) -> web.Response:
         try:
@@ -141,7 +132,7 @@ class JarvisMemoryView(HomeAssistantView):
         text = str(data.get("text", "")).strip()
         category = str(data.get("category", "personal")).strip() or "personal"
         try:
-            item = add_memory(self.hass, text, category)
+            item = await add_memory_async(self.hass, text, category)
         except ValueError:
             return self.json_message("Missing memory text", status_code=400)
         return self.json({"memory": item})
@@ -149,31 +140,21 @@ class JarvisMemoryView(HomeAssistantView):
     async def delete(self, request: web.Request) -> web.Response:
         memory_id = str(request.query.get("id", "")).strip()
         if memory_id:
-            return self.json({"removed": remove_memory_by_id(self.hass, memory_id)})
+            return self.json({"removed": await remove_memory_by_id_async(self.hass, memory_id)})
         query = str(request.query.get("q", "")).strip()
         if query.casefold() == "all":
-            items = _load(self.hass)
-            _save(self.hass, [])
+            items = await _load_async(self.hass)
+            await _save_async(self.hass, [])
             return self.json({"removed": len(items)})
-        return self.json({"removed": remove_memories(self.hass, query)})
+        return self.json({"removed": await remove_memories_async(self.hass, query)})
 
 
 def extract_explicit_memory(text: str) -> tuple[str, str] | None:
-    """Return (action, payload) for deliberate memory commands only."""
     value = " ".join(text.split()).strip()
     patterns = [
-        (
-            "remember",
-            r"^(?:jarvis[ ,]+)?(?:retiens|retient|mémorise|memorise|souviens[- ]toi)[ :,-]+(.+)$",
-        ),
-        (
-            "forget",
-            r"^(?:jarvis[ ,]+)?(?:oublie|efface de ta mémoire|efface de ta memoire)[ :,-]+(.+)$",
-        ),
-        (
-            "recall",
-            r"^(?:jarvis[ ,]+)?(?:que sais[- ]tu de moi|qu[' ]est[- ]ce que tu sais sur moi|montre(?:-moi)? ta mémoire|montre(?:-moi)? ta memoire)$",
-        ),
+        ("remember", r"^(?:jarvis[ ,]+)?(?:retiens|retient|mémorise|memorise|souviens[- ]toi)[ :,-]+(.+)$"),
+        ("forget", r"^(?:jarvis[ ,]+)?(?:oublie|efface de ta mémoire|efface de ta memoire)[ :,-]+(.+)$"),
+        ("recall", r"^(?:jarvis[ ,]+)?(?:que sais[- ]tu de moi|qu[' ]est[- ]ce que tu sais sur moi|montre(?:-moi)? ta mémoire|montre(?:-moi)? ta memoire)$"),
     ]
     for action, pattern in patterns:
         match = re.match(pattern, value, re.IGNORECASE)
