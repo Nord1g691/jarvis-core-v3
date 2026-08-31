@@ -9,5 +9,6 @@
   "single_config_entry": true,
   "integration_type": "hub",
   "iot_class": "local_polling",
-  "requirements": []
+  "requirements": [],
+  "dependencies": ["assist_pipeline", "http"]
 }
