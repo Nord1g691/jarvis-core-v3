@@ -1,14 +1,14 @@
 {
   "domain": "jarvis",
   "name": "JARVIS Core V3",
-  "version": "3.0.19",
-  "documentation": "https://github.com/Nord1g691/jarvis-core-v3",
-  "issue_tracker": "https://github.com/Nord1g691/jarvis-core-v3/issues",
   "codeowners": ["@Nord1g691"],
   "config_flow": true,
-  "single_config_entry": true,
+  "dependencies": ["assist_pipeline", "http"],
+  "documentation": "https://github.com/Nord1g691/jarvis-core-v3",
   "integration_type": "hub",
   "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/Nord1g691/jarvis-core-v3/issues",
   "requirements": [],
-  "dependencies": ["assist_pipeline", "http"]
+  "single_config_entry": true,
+  "version": "3.0.19"
 }
