@@ -3,13 +3,7 @@
     "step": {
       "user": {
         "title": "JARVIS Core Assistant",
-        "description": "Choose the Assist behavior for JARVIS.",
-        "data": {
-          "voice_enabled": "Voice enabled",
-          "solar_enabled": "Solar monitoring enabled",
-          "satellite_enabled": "Satellite enabled",
-          "assist_agent": "Assist agent"
-        }
+        "description": "JARVIS is configured automatically; no entity IDs are required."
       }
     }
   }
