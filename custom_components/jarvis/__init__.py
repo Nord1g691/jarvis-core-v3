@@ -15,7 +15,7 @@ from .memory import JarvisMemoryView
 
 PLATFORMS = ["sensor"]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
-ASSET_VERSION = "3.0.22"
+ASSET_VERSION = "3.0.23"
 PANEL_MODULE = f"{FRONTEND_URL}/jarvis-runtime.js?v={ASSET_VERSION}"
 
 
