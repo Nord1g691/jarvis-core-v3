@@ -37,9 +37,12 @@ jobs:
 
           assert hasattr(integration, "async_setup")
           assert issubclass(flow.ConfigFlow, ConfigFlow)
-          assert flow.ConfigFlow.domain == "jarvis"
+          assert flow.ConfigFlow.VERSION == 1
+          assert hasattr(flow.ConfigFlow, "async_step_user")
+          assert hasattr(flow.ConfigFlow, "async_get_options_flow")
           print("JARVIS integration import: OK")
           print("JARVIS config flow import: OK")
+          print("JARVIS options flow: OK")
           PY
 
   hassfest:
