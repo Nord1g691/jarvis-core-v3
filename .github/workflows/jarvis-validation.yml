@@ -20,10 +20,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install homeassistant
-          # Match the packages pinned by Home Assistant 2026.2.3.
-          # hassil and home-assistant-intents are not both pulled by the
-          # base PyPI install, but HA conversation imports them at runtime.
-          python -m pip install "hassil==3.5.0" "home-assistant-intents==2026.1.28"
+          # Match the packages pinned by Home Assistant 2026.2.3 that are
+          # imported by the JARVIS conversation dependency chain.
+          python -m pip install "hassil==3.5.0" "home-assistant-intents==2026.1.28" mutagen
 
       - name: Compile integration
         run: python -m compileall -q custom_components/jarvis
