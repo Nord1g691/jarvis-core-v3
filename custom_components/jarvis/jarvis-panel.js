@@ -1,1 +1,1 @@
-// PATCH: Satellite controls + operational label positioning will be applied after fetching current file.
+// TEMPORARY PLACEHOLDER — recovering the previous panel source before applying the requested minimal patch.
