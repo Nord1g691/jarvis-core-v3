@@ -1,1 +1,0 @@
-Reference source: Nord1g691/Jarvis-core-2 commit 3d38acc3f501a844d17d4112ce32e064d1b57504. Do not treat this file as runtime code.
