@@ -13,7 +13,7 @@ from .conversation import JarvisConversationView
 from .memory import JarvisMemoryView
 
 PLATFORMS = ["sensor"]
-ASSET_VERSION = "3.0.21"
+ASSET_VERSION = "3.0.22"
 PANEL_MODULE = f"{FRONTEND_URL}/jarvis-panel.js?v={ASSET_VERSION}"
 
 
