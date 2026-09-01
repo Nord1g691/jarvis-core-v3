@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import voluptuous as vol
 from homeassistant.components.frontend import async_register_built_in_panel
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
@@ -14,9 +13,8 @@ from .conversation import JarvisConversationView
 from .memory import JarvisMemoryView
 
 PLATFORMS = ["sensor"]
-ASSET_VERSION = "3.0.19"
+ASSET_VERSION = "3.0.21"
 PANEL_MODULE = f"{FRONTEND_URL}/jarvis-panel.js?v={ASSET_VERSION}"
-CONFIG_SCHEMA = vol.Schema({})
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
