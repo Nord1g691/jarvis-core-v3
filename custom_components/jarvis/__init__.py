@@ -16,7 +16,7 @@ from .memory import JarvisMemoryView
 PLATFORMS = ["sensor"]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 ASSET_VERSION = "3.0.22"
-PANEL_MODULE = f"{FRONTEND_URL}/jarvis-panel.js?v={ASSET_VERSION}"
+PANEL_MODULE = f"{FRONTEND_URL}/jarvis-runtime.js?v={ASSET_VERSION}"
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
