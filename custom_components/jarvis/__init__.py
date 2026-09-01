@@ -7,12 +7,14 @@ from homeassistant.components.frontend import async_register_built_in_panel
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import config_validation as cv
 
 from .const import DOMAIN, FRONTEND_URL, PANEL_URL
 from .conversation import JarvisConversationView
 from .memory import JarvisMemoryView
 
 PLATFORMS = ["sensor"]
+CONFIG_SCHEMA = cv.config_entry_only_config_schema()
 ASSET_VERSION = "3.0.22"
 PANEL_MODULE = f"{FRONTEND_URL}/jarvis-panel.js?v={ASSET_VERSION}"
 
