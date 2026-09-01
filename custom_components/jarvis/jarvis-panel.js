@@ -1,0 +1,1 @@
+// PATCH: Satellite controls + operational label positioning will be applied after fetching current file.
