@@ -1,1 +1,0 @@
-// TEMPORARY PLACEHOLDER — recovering the previous panel source before applying the requested minimal patch.
