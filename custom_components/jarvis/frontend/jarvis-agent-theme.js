@@ -35,9 +35,26 @@ if(Panel&&!Panel.prototype.__jarvisAgentThemeInstalled){
    button,select,.commandInput input{border-color:var(--jarvis-agent-soft)!important;color:var(--jarvis-agent-text)!important}
    .fill{background:var(--jarvis-agent)!important;box-shadow:0 0 12px var(--jarvis-agent),0 0 18px var(--jarvis-agent-soft)!important}
    #stateDock{color:var(--jarvis-agent-text)!important;text-shadow:0 0 14px var(--jarvis-agent),0 0 24px var(--jarvis-agent-soft)!important}
+
+   /* Temporary conversation states intentionally override the persistent agent palette. */
+   .core.state-listen .ring,.core.state-listen .orbit,.core.state-listen .r1,.core.state-listen .r2,.core.state-listen .r3,.core.state-listen .r4,.core.state-listen .r5{border-color:#39ff88!important;box-shadow:0 0 16px #39ff8899,inset 0 0 12px #39ff8844!important}
+   .core.state-listen .led,.core.state-listen .voiceBar{background:#39ff88!important;box-shadow:0 0 10px #39ff88,0 0 22px #39ff8899!important}
+   .core.state-listen .glow{background:radial-gradient(circle,#fff 0 4%,#39ff88 14%,#39ff8899 35%,#39ff8844 56%,transparent 75%)!important;box-shadow:0 0 48px #39ff88,0 0 120px #39ff8899,0 0 180px #39ff8844!important;filter:saturate(1.55) brightness(1.18)!important}
+
+   .core.state-think .ring,.core.state-think .r1,.core.state-think .r2,.core.state-think .r3,.core.state-think .r4,.core.state-think .r5{border-color:#ffb000!important;box-shadow:0 0 16px #ffb00099,inset 0 0 12px #ffb00044!important}
+   .core.state-think .led{background:#ffb000!important;box-shadow:0 0 10px #ffb000,0 0 22px #ffb00099!important}
+   .core.state-think .glow{background:radial-gradient(circle,#fff 0 4%,#ffb000 14%,#ffb00099 35%,#ffb00044 56%,transparent 75%)!important;box-shadow:0 0 50px #ffb000,0 0 125px #ffb00099,0 0 185px #ffb00044!important;filter:saturate(1.55) brightness(1.18)!important}
+
+   .core.state-search .ring,.core.state-search .orbit,.core.state-search .r1,.core.state-search .r2,.core.state-search .r3,.core.state-search .r4,.core.state-search .r5{border-color:#00eaff!important;box-shadow:0 0 16px #00eaff99,inset 0 0 12px #00eaff44!important}
+   .core.state-search .led{background:#00eaff!important;box-shadow:0 0 10px #00eaff,0 0 22px #00eaff99!important}
+   .core.state-search .glow{background:radial-gradient(circle,#fff 0 4%,#00eaff 14%,#00eaff99 35%,#00eaff44 56%,transparent 75%)!important;box-shadow:0 0 48px #00eaff,0 0 120px #00eaff99,0 0 180px #00eaff44!important}
+
+   .core.state-speak .ring,.core.state-speak .orbit,.core.state-speak .r1,.core.state-speak .r2,.core.state-speak .r3,.core.state-speak .r4,.core.state-speak .r5{border-color:#b56cff!important;box-shadow:0 0 17px #b56cff99,inset 0 0 12px #b56cff44!important}
+   .core.state-speak .led,.core.state-speak .voiceBar{background:#b56cff!important;box-shadow:0 0 11px #b56cff,0 0 24px #b56cff99!important}
+   .core.state-speak .glow{background:radial-gradient(circle,#fff 0 4%,#b56cff 14%,#b56cff99 35%,#b56cff44 56%,transparent 75%)!important;box-shadow:0 0 52px #b56cff,0 0 130px #b56cff99,0 0 190px #b56cff44!important;filter:saturate(1.55) brightness(1.2)!important}
   `;root.appendChild(style)}
  };
- Panel.prototype._jarvisInstallAgentVoice=function(){if(!this._core)return;const panel=this;this._core.__jarvisThemePanel=this;this._core.speak=function(text){if(this.muted)return Promise.resolve();return new Promise(resolve=>{const t=panel._jarvisActiveTheme||DEFAULT;this.setState('JARVIS PARLE',t.color);const u=new SpeechSynthesisUtterance(text);u.lang='fr-FR';u.rate=t.rate||.92;u.pitch=t.pitch||1;u.volume=Math.max(0,Math.min(1,Number(panel._prefs?.volume??70)/100));const voices=panel._jarvisFrenchVoices();if(voices.length)u.voice=voices[Math.abs(Number(t.voice)||0)%voices.length];u.onend=()=>{this.setState('OPÉRATIONNEL',t.color);resolve()};u.onerror=()=>{this.setState('OPÉRATIONNEL',t.color);resolve()};speechSynthesis.cancel();speechSynthesis.speak(u)})}};
+ Panel.prototype._jarvisInstallAgentVoice=function(){if(!this._core)return;const panel=this;this._core.__jarvisThemePanel=this;this._core.speak=function(text){if(this.muted)return Promise.resolve();return new Promise(resolve=>{const t=panel._jarvisActiveTheme||DEFAULT;this.setState('JARVIS PARLE','#b56cff');const u=new SpeechSynthesisUtterance(text);u.lang='fr-FR';u.rate=t.rate||.92;u.pitch=t.pitch||1;u.volume=Math.max(0,Math.min(1,Number(panel._prefs?.volume??70)/100));const voices=panel._jarvisFrenchVoices();if(voices.length)u.voice=voices[Math.abs(Number(t.voice)||0)%voices.length];u.onend=()=>{this.setState('OPÉRATIONNEL',t.color);resolve()};u.onerror=()=>{this.setState('OPÉRATIONNEL',t.color);resolve()};speechSynthesis.cancel();speechSynthesis.speak(u)})}};
  const baseBoot=Panel.prototype._bootCore;
  Panel.prototype._bootCore=async function(){await baseBoot.call(this);this._jarvisApplyAgentTheme();this._jarvisInstallAgentVoice();const root=this._core?.shadowRoot,select=root?.getElementById('pipelineSelect');if(select&&!select.__jarvisThemeBound){select.addEventListener('change',()=>setTimeout(()=>{this._jarvisApplyAgentTheme();this._jarvisInstallAgentVoice()},0));select.__jarvisThemeBound=true}if(this._jarvisAgentThemeObserver)this._jarvisAgentThemeObserver.disconnect();if(select){const mo=new MutationObserver(()=>this._jarvisApplyAgentTheme());mo.observe(select,{childList:true,subtree:true,attributes:true});this._jarvisAgentThemeObserver=mo}};
  Panel.prototype.__jarvisAgentThemeInstalled=true;
