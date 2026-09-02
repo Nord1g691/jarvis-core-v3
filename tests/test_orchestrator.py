@@ -38,3 +38,9 @@ def test_return_to_jarvis_wins_over_domain_keywords() -> None:
     route = classify_request("Repasse-moi Jarvis pour la piscine")
     assert route["agent"] == "jarvis"
     assert route["mode"] == "direct"
+
+
+def test_bedroom_fan_routes_to_climate() -> None:
+    route = classify_request("Mets le ventilateur de la chambre à 50 pour cent")
+    assert route["agent"] == "climate"
+    assert route["mode"] == "direct"
