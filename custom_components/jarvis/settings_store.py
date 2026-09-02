@@ -18,6 +18,7 @@ ALLOWED_SECTIONS = {
     "entity_roles",
     "pipeline_map",
     "visual_mode",
+    "core_size",
     "proposal_reviews",
 }
 
@@ -53,6 +54,7 @@ DEFAULT_SETTINGS: dict[str, Any] = {
     "entity_roles": DEFAULT_ENTITY_ROLES,
     "pipeline_map": {},
     "visual_mode": "classic",
+    "core_size": 100,
     "proposal_reviews": {},
 }
 
