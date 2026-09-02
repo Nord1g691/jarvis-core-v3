@@ -10,6 +10,7 @@ if(Panel&&!Panel.prototype.__jarvisPersistentSettingsInstalled){
  };
  const writeLocal=(section,value)=>{try{const key=LOCAL_KEYS[section];if(!key)return;if(typeof value==='string')localStorage.setItem(key,value);else localStorage.setItem(key,JSON.stringify(value))}catch(_){}};
  const readLocal=section=>{try{const key=LOCAL_KEYS[section];if(!key)return undefined;const raw=localStorage.getItem(key);if(raw==null)return undefined;if(section==='visual_mode')return raw;return JSON.parse(raw)}catch(_){return undefined}};
+ const usefulLocal=(section,value)=>section==='visual_mode'?typeof value==='string'&&value.length>0:section==='core_size'?Number.isFinite(Number(value)):value&&typeof value==='object'&&Object.keys(value).length>0;
  Panel.prototype._jarvisPersistSetting=async function(section,value){
   writeLocal(section,value);
   try{await this._hass?.callApi?.('POST','jarvis/settings',{section,value});return true}catch(_){return false}
@@ -18,13 +19,16 @@ if(Panel&&!Panel.prototype.__jarvisPersistentSettingsInstalled){
   if(this.__jarvisSettingsHydrated)return;this.__jarvisSettingsHydrated=true;
   try{
    const data=await this._hass?.callApi?.('GET','jarvis/settings');
-   const settings=data?.settings||{};
-   for(const [section,key] of Object.entries(LOCAL_KEYS)){
-    const value=settings?.[section];if(value===undefined||value===null)continue;
-    const local=readLocal(section);
-    const localHasUsefulValue=section==='visual_mode'?typeof local==='string'&&local.length>0:section==='core_size'?Number.isFinite(Number(local)):local&&typeof local==='object'&&Object.keys(local).length>0;
-    if(localHasUsefulValue){await this._hass?.callApi?.('POST','jarvis/settings',{section,value:local});}
-    else writeLocal(section,value);
+   const settings=data?.settings||{},initialized=Boolean(data?.initialized);
+   if(!initialized){
+    for(const section of Object.keys(LOCAL_KEYS)){
+     const local=readLocal(section);if(!usefulLocal(section,local))continue;
+     await this._hass?.callApi?.('POST','jarvis/settings',{section,value:local});
+    }
+   }else{
+    for(const section of Object.keys(LOCAL_KEYS)){
+     const value=settings?.[section];if(value===undefined||value===null)continue;writeLocal(section,value);
+    }
    }
    this._jarvisApplyVisualMode?.();
    this._jarvisApplyCoreSize?.();
