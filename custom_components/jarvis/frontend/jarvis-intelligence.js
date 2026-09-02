@@ -16,7 +16,7 @@ if(Panel&&!Panel.prototype.__jarvisIntelligenceInstalled){
  const baseFavorites=Panel.prototype._renderFavorites;
  if(baseFavorites)Panel.prototype._renderFavorites=function(){
   const card=this._core?.shadowRoot?.getElementById('jarvisFavoritesCard'),box=card?.querySelector('.jarvis-domain-list');if(!card||!box)return baseFavorites.call(this);
-  const usage=this._readEntityUsage?.()||{},ignored=this._jarvisIgnored(),pinned=this._jarvisPinned(),allowed=new Set(['light','climate','media_player','cover','switch']);
+  const usage=this._readEntityUsage?.()||{},ignored=this._jarvisIgnored(),pinned=this._jarvisPinned(),allowed=new Set(['light','climate','fan','media_player','cover','switch']);
   const all=Object.values(this._hass?.states||{}).filter(s=>allowed.has(s.entity_id?.split('.')[0])&&!ignored.has(s.entity_id));
   const states=all.filter(s=>pinned.has(s.entity_id)||Number(usage[s.entity_id]||0)>0).sort((a,b)=>{const ap=pinned.has(a.entity_id)?1:0,bp=pinned.has(b.entity_id)?1:0;if(bp!==ap)return bp-ap;return Number(usage[b.entity_id]||0)-Number(usage[a.entity_id]||0)}).slice(0,8);
   box.innerHTML='';if(!states.length){box.textContent='Épingle une entité ou utilise JARVIS : les favoris apparaîtront ici.';return}
@@ -44,7 +44,7 @@ if(Panel&&!Panel.prototype.__jarvisIntelligenceInstalled){
  const baseSettings=Panel.prototype._domainSettingsHtml;
  if(baseSettings)Panel.prototype._domainSettingsHtml=function(domain){
   const html=baseSettings.call(this,domain),ignored=this._jarvisIgnored(),pinned=this._jarvisPinned();
-  const raw=Object.values(this._hass?.states||{}).filter(s=>s.entity_id?.startsWith(domain+'.'));
+  const raw=Object.values(this._hass?.states||{}).filter(s=>s.entity_id?.startsWith(domain+'.')||(domain==='climate'&&s.entity_id?.startsWith('fan.')));
   const controls=raw.map(s=>`<div class="jarvis-setting-entity"><div class="jarvis-setting-head"><span>${this._escapeSetting(s.attributes?.friendly_name||s.entity_id)}</span><small>${ignored.has(s.entity_id)?'IGNORÉ':pinned.has(s.entity_id)?'★ ÉPINGLÉ':''}</small></div><div class="jarvis-setting-controls"><button data-jarvis-ignore="${this._escapeSetting(s.entity_id)}">${ignored.has(s.entity_id)?'RÉINTÉGRER':'IGNORER'}</button><button data-jarvis-pin="${this._escapeSetting(s.entity_id)}">${pinned.has(s.entity_id)?'DÉSÉPINGLER':'★ FAVORI'}</button></div></div>`).join('');
   return html+'<div class="jarvis-setting-note" style="margin-top:10px">Organisation JARVIS</div>'+controls;
  };
