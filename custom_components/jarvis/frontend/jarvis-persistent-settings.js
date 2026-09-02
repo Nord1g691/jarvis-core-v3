@@ -5,7 +5,8 @@ if(Panel&&!Panel.prototype.__jarvisPersistentSettingsInstalled){
   agent_autonomy:'jarvis_agent_autonomy_v326',
   entity_roles:'jarvis_entity_roles_v326',
   pipeline_map:'jarvis_agent_pipeline_map_v326',
-  visual_mode:'jarvis_visual_mode_v326'
+  visual_mode:'jarvis_visual_mode_v326',
+  core_size:'jarvis_core_size_v326'
  };
  const writeLocal=(section,value)=>{try{const key=LOCAL_KEYS[section];if(!key)return;if(typeof value==='string')localStorage.setItem(key,value);else localStorage.setItem(key,JSON.stringify(value))}catch(_){}};
  const readLocal=section=>{try{const key=LOCAL_KEYS[section];if(!key)return undefined;const raw=localStorage.getItem(key);if(raw==null)return undefined;if(section==='visual_mode')return raw;return JSON.parse(raw)}catch(_){return undefined}};
@@ -21,11 +22,12 @@ if(Panel&&!Panel.prototype.__jarvisPersistentSettingsInstalled){
    for(const [section,key] of Object.entries(LOCAL_KEYS)){
     const value=settings?.[section];if(value===undefined||value===null)continue;
     const local=readLocal(section);
-    const localHasUsefulValue=section==='visual_mode'?typeof local==='string'&&local.length>0:local&&typeof local==='object'&&Object.keys(local).length>0;
+    const localHasUsefulValue=section==='visual_mode'?typeof local==='string'&&local.length>0:section==='core_size'?Number.isFinite(Number(local)):local&&typeof local==='object'&&Object.keys(local).length>0;
     if(localHasUsefulValue){await this._hass?.callApi?.('POST','jarvis/settings',{section,value:local});}
     else writeLocal(section,value);
    }
    this._jarvisApplyVisualMode?.();
+   this._jarvisApplyCoreSize?.();
   }catch(_){/* localStorage remains the fallback */}
  };
  const wrap=(name,section,getValue)=>{
