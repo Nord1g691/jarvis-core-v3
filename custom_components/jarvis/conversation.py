@@ -52,6 +52,82 @@ class JarvisConversationView(HomeAssistantView):
             + "\n\n"
         )
 
+    def _route_context(self, route: dict[str, str | float]) -> str:
+        """Build a compact, read-only context for the selected specialist domain."""
+        key = str(route.get("agent") or "jarvis")
+        states = self.hass.states.async_all()
+        lines: list[str] = []
+
+        if key == "calendar":
+            for state in states:
+                if state.domain != "calendar":
+                    continue
+                attrs = state.attributes
+                message = attrs.get("message") or state.name
+                start = attrs.get("start_time") or ""
+                end = attrs.get("end_time") or ""
+                location = attrs.get("location") or ""
+                lines.append(f"- {state.name}: {message} | {start} → {end} | {location}")
+            title = "Contexte calendrier Home Assistant"
+        elif key == "sentinel":
+            for state in states:
+                if state.domain == "camera":
+                    lines.append(f"- caméra {state.name}: {state.state}")
+                elif state.domain in {"alarm_control_panel", "lock"}:
+                    lines.append(f"- {state.domain} {state.name}: {state.state}")
+                elif state.domain == "binary_sensor":
+                    dc = str(state.attributes.get("device_class") or "")
+                    if dc in {"door", "window", "opening", "motion", "occupancy", "presence", "smoke", "moisture", "safety"}:
+                        lines.append(f"- {state.name} ({dc}): {state.state}")
+            title = "Contexte Sentinel / sécurité"
+        elif key == "energy":
+            wanted = {
+                "sensor.envoy_122323101280_production_solaire_instantanee",
+                "sensor.envoy_122323101280_consommation_electrique_actuelle",
+                "sensor.puissance_import_reseau",
+                "sensor.puissance_export_reseau",
+                "switch.chauffe_eau",
+                "switch.voiture_electrique_contacteur_1",
+            }
+            for entity_id in wanted:
+                state = self.hass.states.get(entity_id)
+                if state is not None:
+                    unit = state.attributes.get("unit_of_measurement") or ""
+                    lines.append(f"- {state.name}: {state.state} {unit}".rstrip())
+            title = "Contexte énergie"
+        elif key == "climate":
+            for state in states:
+                if state.domain != "climate":
+                    continue
+                cur = state.attributes.get("current_temperature")
+                target = state.attributes.get("temperature")
+                lines.append(f"- {state.name}: {state.state} | actuel {cur}° | cible {target}°")
+            title = "Contexte climat"
+        elif key == "water":
+            for state in states:
+                text = f"{state.entity_id} {state.name}".casefold()
+                if any(word in text for word in ("piscine", "filtration", "eau", "arrosage", "veolia", "adouc")):
+                    lines.append(f"- {state.name}: {state.state}")
+            title = "Contexte eau / piscine"
+        elif key == "media":
+            for state in states:
+                if state.domain == "media_player":
+                    title_now = state.attributes.get("media_title") or ""
+                    lines.append(f"- {state.name}: {state.state} {title_now}".rstrip())
+            title = "Contexte média"
+        elif key == "garden":
+            for state in states:
+                text = f"{state.entity_id} {state.name}".casefold()
+                if any(word in text for word in ("jardin", "arrosage", "potager", "tondeuse", "pluie", "precip")):
+                    lines.append(f"- {state.name}: {state.state}")
+            title = "Contexte jardin"
+        else:
+            return ""
+
+        if not lines:
+            return ""
+        return title + " (lecture seule, utiliser seulement si pertinent) :\n" + "\n".join(lines[:30]) + "\n\n"
+
     async def post(self, request: web.Request) -> web.Response:
         try:
             data = await request.json()
@@ -68,103 +144,43 @@ class JarvisConversationView(HomeAssistantView):
             action, payload = explicit
             if action == "remember":
                 item = await add_memory_async(self.hass, payload)
-                return self.json(
-                    {
-                        "response": {"speech": {"plain": {"speech": "C'est retenu."}}},
-                        "memory_action": "remember",
-                        "memory": item,
-                        "conversation_id": data.get("conversation_id"),
-                        "orchestration": route,
-                    }
-                )
+                return self.json({"response": {"speech": {"plain": {"speech": "C'est retenu."}}}, "memory_action": "remember", "memory": item, "conversation_id": data.get("conversation_id"), "orchestration": route})
             if action == "forget":
                 removed = await remove_memories_async(self.hass, payload)
-                speech = (
-                    "C'est oublié."
-                    if removed
-                    else "Je ne trouve pas cette information dans ma mémoire."
-                )
-                return self.json(
-                    {
-                        "response": {"speech": {"plain": {"speech": speech}}},
-                        "memory_action": "forget",
-                        "removed": removed,
-                        "conversation_id": data.get("conversation_id"),
-                        "orchestration": route,
-                    }
-                )
+                speech = "C'est oublié." if removed else "Je ne trouve pas cette information dans ma mémoire."
+                return self.json({"response": {"speech": {"plain": {"speech": speech}}}, "memory_action": "forget", "removed": removed, "conversation_id": data.get("conversation_id"), "orchestration": route})
             if action == "recall":
                 memories = await search_memories_async(self.hass, "", 20)
-                speech = (
-                    "Je n'ai encore rien en mémoire."
-                    if not memories
-                    else "Voici ce que j'ai mémorisé : "
-                    + "; ".join(item["text"] for item in memories[:10])
-                )
-                return self.json(
-                    {
-                        "response": {"speech": {"plain": {"speech": speech}}},
-                        "memory_action": "recall",
-                        "memories": memories,
-                        "conversation_id": data.get("conversation_id"),
-                        "orchestration": route,
-                    }
-                )
+                speech = "Je n'ai encore rien en mémoire." if not memories else "Voici ce que j'ai mémorisé : " + "; ".join(item["text"] for item in memories[:10])
+                return self.json({"response": {"speech": {"plain": {"speech": speech}}}, "memory_action": "recall", "memories": memories, "conversation_id": data.get("conversation_id"), "orchestration": route})
 
         conversation_id = data.get("conversation_id")
-        conversation_id = (
-            conversation_id.strip()
-            if isinstance(conversation_id, str) and conversation_id.strip()
-            else None
-        )
+        conversation_id = conversation_id.strip() if isinstance(conversation_id, str) and conversation_id.strip() else None
         requested_pipeline = data.get("pipeline")
-        requested_pipeline = (
-            str(requested_pipeline).strip() or None
-            if requested_pipeline is not None
-            else None
-        )
+        requested_pipeline = str(requested_pipeline).strip() or None if requested_pipeline is not None else None
 
         try:
             agent_id, pipeline_name = self._select_agent(requested_pipeline)
-            contextual_text = await self._memory_context(text)
-            payload = {
-                "text": contextual_text + text if contextual_text else text,
-                "agent_id": agent_id,
-            }
+            memory_context = await self._memory_context(text)
+            route_context = self._route_context(route)
+            contextual_text = memory_context + route_context
+            payload = {"text": contextual_text + text if contextual_text else text, "agent_id": agent_id}
             if conversation_id:
                 payload["conversation_id"] = conversation_id
-            result = await self.hass.services.async_call(
-                "conversation",
-                "process",
-                payload,
-                blocking=True,
-                return_response=True,
-            )
+            result = await self.hass.services.async_call("conversation", "process", payload, blocking=True, return_response=True)
         except Exception as err:
             return self.json_message(f"Assist error: {err}", status_code=502)
 
         response = result or {}
         response_data = response.get("response", {}) if isinstance(response, dict) else {}
-        new_conversation_id = (
-            response.get("conversation_id") if isinstance(response, dict) else None
-        )
-        return self.json(
-            {
-                "response": response_data,
-                "conversation_id": new_conversation_id or conversation_id,
-                "agent_id": agent_id,
-                "pipeline_name": pipeline_name,
-                "orchestration": route,
-                "pipelines": [
-                    {
-                        "id": p.id,
-                        "name": p.name,
-                        "conversation_engine": p.conversation_engine,
-                    }
-                    for p in self._pipelines()
-                ],
-                "continue_conversation": response.get("continue_conversation", False)
-                if isinstance(response, dict)
-                else False,
-            }
-        )
+        new_conversation_id = response.get("conversation_id") if isinstance(response, dict) else None
+        return self.json({
+            "response": response_data,
+            "conversation_id": new_conversation_id or conversation_id,
+            "agent_id": agent_id,
+            "pipeline_name": pipeline_name,
+            "orchestration": route,
+            "context_used": bool(route_context),
+            "pipelines": [{"id": p.id, "name": p.name, "conversation_engine": p.conversation_engine} for p in self._pipelines()],
+            "continue_conversation": response.get("continue_conversation", False) if isinstance(response, dict) else False,
+        })
