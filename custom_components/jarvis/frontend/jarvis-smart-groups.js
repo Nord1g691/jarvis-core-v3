@@ -1,4 +1,4 @@
-/* JARVIS Core V3.0.25 — smart room grouping and simplified card settings. */
+/* JARVIS Core V3.0.25 — smart room grouping and card ergonomics. */
 const Panel=customElements.get('jarvis-panel');
 if(Panel&&!Panel.prototype.__jarvisSmartGroupsInstalled){
   Panel.prototype._registryValue=function(source,key){
@@ -67,14 +67,35 @@ if(Panel&&!Panel.prototype.__jarvisSmartGroupsInstalled){
     finally{this._domainStates=originalStates}
   };
 
+  Panel.prototype._installCardCollapsers=function(){
+    const root=this._core?.shadowRoot;if(!root)return;
+    for(const card of root.querySelectorAll('.grid>.card')){
+      if(card.__jarvisCollapsible)continue;
+      const title=card.querySelector(':scope>.title');if(!title)continue;
+      const key=card.id||String(title.textContent||'card').trim().toLowerCase().replace(/\s+/g,'-');
+      const storageKey='jarvis_card_open_'+key;
+      const body=document.createElement('div');body.className='jarvis-card-body';
+      [...card.children].filter(el=>el!==title).forEach(el=>body.appendChild(el));card.appendChild(body);
+      title.classList.add('jarvis-card-toggle');
+      const marker=document.createElement('span');marker.className='jarvis-card-marker';title.appendChild(marker);
+      const saved=localStorage.getItem(storageKey);const open=saved===null?false:saved==='1';
+      body.hidden=!open;marker.textContent=open?'FERMER':'OUVRIR';card.dataset.jarvisOpen=open?'1':'0';
+      title.onclick=()=>{const next=body.hidden;body.hidden=!next;card.dataset.jarvisOpen=next?'1':'0';marker.textContent=next?'FERMER':'OUVRIR';localStorage.setItem(storageKey,next?'1':'0')};
+      card.__jarvisCollapsible=true;
+    }
+    if(!root.getElementById('jarvisCardCollapseStyle')){const s=document.createElement('style');s.id='jarvisCardCollapseStyle';s.textContent='.jarvis-card-toggle{display:flex;justify-content:space-between;align-items:center;gap:10px;cursor:pointer;user-select:none;margin-bottom:0!important}.jarvis-card-marker{font-size:8px;font-weight:400;letter-spacing:1px;opacity:.6}.jarvis-card-body{margin-top:10px}.jarvis-card-body[hidden]{display:none!important}';root.appendChild(s)}
+  };
+
   const baseRenderCards=Panel.prototype._renderCards;
   Panel.prototype._renderCards=function(){
     baseRenderCards.call(this);
-    const box=this.shadowRoot?.getElementById('cards');if(!box)return;
-    box.querySelectorAll('.up,.down').forEach(el=>el.remove());
-    box.querySelectorAll('.row').forEach(row=>row.style.gridTemplateColumns='34px 1fr');
+    const box=this.shadowRoot?.getElementById('cards');
+    if(box){box.querySelectorAll('.row').forEach(row=>row.style.gridTemplateColumns='34px 1fr 34px 34px');}
     if(!this.shadowRoot.getElementById('jarvisSmartSettingsStyle')){const s=document.createElement('style');s.id='jarvisSmartSettingsStyle';s.textContent='.jarvis-setting-area{padding:5px 0}.jarvis-setting-area+.jarvis-setting-area{border-top:1px solid #00eaff18;margin-top:5px}.jarvis-setting-area-title{font-size:8px;letter-spacing:1.3px;color:#8bd6ea;text-transform:uppercase;padding:5px 0 3px}';this.shadowRoot.appendChild(s)}
+    queueMicrotask(()=>this._installCardCollapsers());
   };
 
+  const baseBoot=Panel.prototype._bootCore;
+  Panel.prototype._bootCore=async function(){await baseBoot.call(this);this._installCardCollapsers()};
   Panel.prototype.__jarvisSmartGroupsInstalled=true;
 }
