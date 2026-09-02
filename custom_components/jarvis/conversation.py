@@ -15,6 +15,13 @@ from .memory import (
 from .orchestrator import classify_request
 
 
+_SPECIALIST_PIPELINE_TERMS: dict[str, tuple[str, ...]] = {
+    "chef": ("chef", "cuisine"),
+    "mail": ("messenger", "messagerie"),
+    "technical": ("système", "systeme", "technique"),
+}
+
+
 class JarvisConversationView(HomeAssistantView):
     url = "/api/jarvis/conversation"
     name = "api:jarvis:conversation"
@@ -22,6 +29,7 @@ class JarvisConversationView(HomeAssistantView):
 
     def __init__(self, hass: HomeAssistant) -> None:
         self.hass = hass
+        self._handoffs: dict[str, str] = {}
 
     def _pipelines(self):
         return assist_pipeline.async_get_pipelines(self.hass)
@@ -37,6 +45,38 @@ class JarvisConversationView(HomeAssistantView):
         if preferred_agent:
             return preferred_agent, preferred.name
         return conversation.HOME_ASSISTANT_AGENT, preferred.name
+
+    def _select_specialist(self, agent_key: str):
+        """Return a configured specialist pipeline, if one is available."""
+        terms = _SPECIALIST_PIPELINE_TERMS.get(agent_key, ())
+        if not terms:
+            return None
+        for pipeline in self._pipelines():
+            haystack = f"{pipeline.name} {pipeline.conversation_engine}".casefold()
+            if any(term in haystack for term in terms):
+                return pipeline.conversation_engine, pipeline.name, pipeline.id
+        return None
+
+    async def _process_agent(
+        self,
+        agent_id: str,
+        text: str,
+        conversation_id: str | None = None,
+    ) -> dict:
+        payload = {"text": text, "agent_id": agent_id}
+        if conversation_id:
+            payload["conversation_id"] = conversation_id
+        result = await self.hass.services.async_call(
+            "conversation", "process", payload, blocking=True, return_response=True
+        )
+        return result or {}
+
+    @staticmethod
+    def _plain_speech(result: dict) -> str:
+        response = result.get("response", {}) if isinstance(result, dict) else {}
+        speech = response.get("speech", {}) if isinstance(response, dict) else {}
+        plain = speech.get("plain", {}) if isinstance(speech, dict) else {}
+        return str(plain.get("speech") or "").strip() if isinstance(plain, dict) else ""
 
     async def _memory_context(self, text: str) -> str:
         words = [w for w in text.casefold().split() if len(w) > 3]
@@ -97,6 +137,11 @@ class JarvisConversationView(HomeAssistantView):
             title = "Contexte énergie"
         elif key == "climate":
             for state in states:
+                if state.domain == "fan":
+                    percentage = state.attributes.get("percentage")
+                    suffix = f" | vitesse {percentage} %" if percentage is not None else ""
+                    lines.append(f"- {state.name}: {state.state}{suffix}")
+                    continue
                 if state.domain != "climate":
                     continue
                 cur = state.attributes.get("current_temperature")
@@ -156,6 +201,16 @@ class JarvisConversationView(HomeAssistantView):
 
         conversation_id = data.get("conversation_id")
         conversation_id = conversation_id.strip() if isinstance(conversation_id, str) and conversation_id.strip() else None
+        if conversation_id and route.get("reason") == "return_to_jarvis":
+            self._handoffs.pop(conversation_id, None)
+        elif conversation_id and conversation_id in self._handoffs:
+            route = {
+                **route,
+                "agent": self._handoffs[conversation_id],
+                "mode": "transfer",
+                "reason": "active_handoff",
+                "confidence": 1.0,
+            }
         requested_pipeline = data.get("pipeline")
         requested_pipeline = str(requested_pipeline).strip() or None if requested_pipeline is not None else None
 
@@ -164,22 +219,76 @@ class JarvisConversationView(HomeAssistantView):
             memory_context = await self._memory_context(text)
             route_context = self._route_context(route)
             contextual_text = memory_context + route_context
-            payload = {"text": contextual_text + text if contextual_text else text, "agent_id": agent_id}
-            if conversation_id:
-                payload["conversation_id"] = conversation_id
-            result = await self.hass.services.async_call("conversation", "process", payload, blocking=True, return_response=True)
+            mode = str(route.get("mode") or "direct")
+            specialist = self._select_specialist(str(route.get("agent") or "jarvis"))
+            delegated = False
+            specialist_pipeline = None
+
+            if specialist and mode == "transfer":
+                specialist_agent, specialist_name, candidate_pipeline = specialist
+                try:
+                    result = await self._process_agent(
+                        specialist_agent,
+                        contextual_text + text if contextual_text else text,
+                        conversation_id,
+                    )
+                except Exception:  # Specialist unavailable: JARVIS remains usable.
+                    result = await self._process_agent(
+                        agent_id,
+                        contextual_text + text if contextual_text else text,
+                        conversation_id,
+                    )
+                else:
+                    agent_id = specialist_agent
+                    pipeline_name = specialist_name
+                    specialist_pipeline = candidate_pipeline
+                    delegated = True
+            else:
+                if specialist and mode == "consult":
+                    specialist_agent, specialist_name, candidate_pipeline = specialist
+                    try:
+                        specialist_result = await self._process_agent(
+                            specialist_agent,
+                            contextual_text + text if contextual_text else text,
+                        )
+                    except Exception:
+                        specialist_speech = ""
+                    else:
+                        specialist_speech = self._plain_speech(specialist_result)
+                    if specialist_speech:
+                        specialist_pipeline = candidate_pipeline
+                        contextual_text += (
+                            f"Avis du spécialiste {specialist_name} (à synthétiser sans "
+                            f"mentionner la délégation) :\n{specialist_speech}\n\n"
+                        )
+                        delegated = True
+                result = await self._process_agent(
+                    agent_id,
+                    contextual_text + text if contextual_text else text,
+                    conversation_id,
+                )
         except Exception as err:
             return self.json_message(f"Assist error: {err}", status_code=502)
 
         response = result or {}
         response_data = response.get("response", {}) if isinstance(response, dict) else {}
         new_conversation_id = response.get("conversation_id") if isinstance(response, dict) else None
+        active_conversation_id = new_conversation_id or conversation_id
+        if delegated and mode == "transfer" and active_conversation_id:
+            if conversation_id and conversation_id != active_conversation_id:
+                self._handoffs.pop(conversation_id, None)
+            self._handoffs[active_conversation_id] = str(route.get("agent") or "jarvis")
+            while len(self._handoffs) > 100:
+                self._handoffs.pop(next(iter(self._handoffs)))
         return self.json({
             "response": response_data,
             "conversation_id": new_conversation_id or conversation_id,
             "agent_id": agent_id,
             "pipeline_name": pipeline_name,
             "orchestration": route,
+            "delegated": delegated,
+            "specialist_pipeline": specialist_pipeline,
+            "active_agent": self._handoffs.get(active_conversation_id, "jarvis") if active_conversation_id else "jarvis",
             "context_used": bool(route_context),
             "pipelines": [{"id": p.id, "name": p.name, "conversation_engine": p.conversation_engine} for p in self._pipelines()],
             "continue_conversation": response.get("continue_conversation", False) if isinstance(response, dict) else False,

@@ -77,7 +77,8 @@ class JarvisContextView(HomeAssistantView):
                     "mail": False,
                     "documents": False,
                     "suggestions": False,
-                    "agent_delegation": False,
+                    "agent_delegation": True,
+                    "orchestration_modes": ["direct", "consult", "transfer"],
                 },
             }
         )
