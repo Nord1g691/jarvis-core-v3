@@ -15,6 +15,11 @@ from .context import JarvisContextView
 from .conversation import JarvisConversationView
 from .diagnostics import JarvisDiagnosticsView
 from .memory import JarvisMemoryView
+from .sentinel_events import (
+    JarvisSentinelEventsView,
+    async_setup_sentinel_events,
+    async_unload_sentinel_events,
+)
 from .structure import JarvisStructureView
 from .suggestions import JarvisSuggestionsView
 
@@ -34,6 +39,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     hass.http.register_view(JarvisDiagnosticsView(hass))
     hass.http.register_view(JarvisStructureView(hass))
     hass.http.register_view(JarvisSuggestionsView(hass))
+    hass.http.register_view(JarvisSentinelEventsView(hass))
     frontend_dir = Path(__file__).parent / "frontend"
     await hass.http.async_register_static_paths(
         [StaticPathConfig(FRONTEND_URL, str(frontend_dir), cache_headers=False)]
@@ -60,11 +66,13 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = entry.data
+    await async_setup_sentinel_events(hass)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    await async_unload_sentinel_events(hass)
     hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
     return unloaded
