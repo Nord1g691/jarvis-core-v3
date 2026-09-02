@@ -20,6 +20,7 @@ from .sentinel_events import (
     async_setup_sentinel_events,
     async_unload_sentinel_events,
 )
+from .settings_store import JarvisSettingsView
 from .structure import JarvisStructureView
 from .suggestions import JarvisSuggestionsView
 
@@ -38,6 +39,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     hass.http.register_view(JarvisBriefingView(hass))
     hass.http.register_view(JarvisDiagnosticsView(hass))
     hass.http.register_view(JarvisStructureView(hass))
+    hass.http.register_view(JarvisSettingsView(hass))
     hass.http.register_view(JarvisSuggestionsView(hass))
     hass.http.register_view(JarvisSentinelEventsView(hass))
     frontend_dir = Path(__file__).parent / "frontend"
