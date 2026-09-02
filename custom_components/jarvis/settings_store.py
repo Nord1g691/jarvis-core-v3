@@ -107,7 +107,14 @@ class JarvisSettingsView(HomeAssistantView):
         self.hass = hass
 
     async def get(self, request: web.Request) -> web.Response:
-        return self.json({"settings": await async_get_settings(self.hass), "persistent": True})
+        raw = await _store(self.hass).async_load()
+        return self.json(
+            {
+                "settings": _merge_defaults(raw),
+                "persistent": True,
+                "initialized": isinstance(raw, dict),
+            }
+        )
 
     async def post(self, request: web.Request) -> web.Response:
         try:
