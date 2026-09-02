@@ -45,6 +45,13 @@ jobs:
           print("JARVIS options flow: OK")
           PY
 
+      - name: Validate frontend JavaScript syntax
+        run: |
+          for file in custom_components/jarvis/frontend/*.js; do
+            echo "Checking $file"
+            node --input-type=module --check < "$file"
+          done
+
   hassfest:
     runs-on: ubuntu-latest
     steps:
