@@ -1,4 +1,4 @@
-"""Read-only diagnostics for JARVIS Core V3."""
+"""Read-only diagnostics and health scoring for JARVIS Core V3."""
 from __future__ import annotations
 
 from aiohttp import web
@@ -6,7 +6,10 @@ from homeassistant.components import assist_pipeline
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.core import HomeAssistant
 
+from .const import DOMAIN
+from .memory import search_memories_async
 from .sentinel import current_security_snapshot
+from .sentinel_events import recent_sentinel_events
 
 
 class JarvisDiagnosticsView(HomeAssistantView):
@@ -44,22 +47,90 @@ class JarvisDiagnosticsView(HomeAssistantView):
             for pipeline in pipelines
         ]
 
+    @staticmethod
+    def _clamp(value: int) -> int:
+        return max(0, min(100, int(value)))
+
     async def get(self, request: web.Request) -> web.Response:
         sentinel = current_security_snapshot(self.hass)
         frigate = sentinel.get("providers", {}).get("frigate", {})
         unavailable = self._unavailable()
         pipelines = self._pipelines()
-        critical = [
+        memories = await search_memories_async(self.hass, "", 500)
+        events = recent_sentinel_events(self.hass, 50)
+        critical_unavailable = [
             item for item in unavailable
             if item["entity_id"].split(".", 1)[0] in {"camera", "alarm_control_panel", "lock", "binary_sensor"}
         ]
+        critical_events = [item for item in events if item.get("severity") == "critical"]
+        components = self.hass.config.components
+        states = self.hass.states
+        domain_data = self.hass.data.get(DOMAIN, {})
+        sentinel_listener = bool(domain_data.get("_sentinel_unsub"))
+
+        structure_present = any(
+            states.async_all(domain)
+            for domain in ("automation", "script", "scene", "calendar", "person")
+        )
+
+        core_score = 100 if DOMAIN in components else 20
+        assist_score = 100 if pipelines else 35
+        if pipelines and not any(p.get("conversation_engine") for p in pipelines):
+            assist_score = 75
+
+        security_score = 100
+        security_score -= min(45, len(critical_unavailable) * 12)
+        security_score -= min(35, len(critical_events) * 10)
+        if not sentinel_listener:
+            security_score -= 20
+
+        memory_score = 100 if memories else 82
+        structure_score = 100 if structure_present else 70
+
+        sub_scores = {
+            "core": self._clamp(core_score),
+            "assist": self._clamp(assist_score),
+            "security": self._clamp(security_score),
+            "memory": self._clamp(memory_score),
+            "structure": self._clamp(structure_score),
+        }
+        total = round(
+            sub_scores["core"] * 0.25
+            + sub_scores["assist"] * 0.20
+            + sub_scores["security"] * 0.25
+            + sub_scores["memory"] * 0.10
+            + sub_scores["structure"] * 0.20
+        )
+        level = "excellent" if total >= 90 else "good" if total >= 75 else "warning" if total >= 55 else "critical"
+
+        issues: list[dict[str, str]] = []
+        if not pipelines:
+            issues.append({"area": "assist", "severity": "warning", "message": "Aucun pipeline Assist détecté."})
+        if critical_unavailable:
+            issues.append({"area": "security", "severity": "critical", "message": f"{len(critical_unavailable)} entité(s) de sécurité indisponible(s)."})
+        if not sentinel_listener:
+            issues.append({"area": "security", "severity": "warning", "message": "Le listener Sentinel n'est pas actif."})
+        if critical_events:
+            issues.append({"area": "security", "severity": "warning", "message": f"{len(critical_events)} événement(s) Sentinel critique(s) dans le buffer récent."})
+        if not structure_present:
+            issues.append({"area": "structure", "severity": "info", "message": "Structure Home Assistant limitée ou non détectée."})
+
         return self.json(
             {
+                "health": {
+                    "score": total,
+                    "level": level,
+                    "sub_scores": sub_scores,
+                    "issues": issues[:12],
+                },
                 "core": {
-                    "loaded": "jarvis" in self.hass.config.components,
+                    "loaded": DOMAIN in components,
                     "pipeline_count": len(pipelines),
                     "unavailable_count": len(unavailable),
-                    "security_unavailable_count": len(critical),
+                    "security_unavailable_count": len(critical_unavailable),
+                    "memory_count": len(memories),
+                    "sentinel_event_count": len(events),
+                    "sentinel_listener": sentinel_listener,
                 },
                 "pipelines": pipelines,
                 "unavailable": unavailable,
@@ -72,7 +143,7 @@ class JarvisDiagnosticsView(HomeAssistantView):
                     "frigate_available": bool(frigate.get("available")),
                     "mqtt_available": bool(frigate.get("mqtt_available")),
                 },
-                "status": "warning" if critical or not pipelines else "ok",
+                "status": "ok" if total >= 75 else "warning",
                 "read_only": True,
             }
         )
