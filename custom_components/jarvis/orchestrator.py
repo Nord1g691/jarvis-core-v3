@@ -39,7 +39,7 @@ _PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("energy", re.compile(r"\b(énergie|energie|solaire|photovolta|surplus|consommation|conso|réseau|reseau|chauffe.?eau|voiture électrique|ve\b)" , re.I)),
     ("sentinel", re.compile(r"\b(sécur|secur|caméra|camera|portail|intrusion|alarme|présence|presence|visiteur|colis|sentinel)\b", re.I)),
     ("water", re.compile(r"\b(piscine|eau|arrosage|jardinage eau|filtration|ph\b|chlore|oxygène|oxygene|adoucisseur)\b", re.I)),
-    ("climate", re.compile(r"\b(chauffage|chauffer|clim|climatisation|thermostat|température|temperature|pac\b)" , re.I)),
+    ("climate", re.compile(r"\b(chauffage|chauffer|clim|climatisation|thermostat|température|temperature|ventilateur|ventilo|pac\b)" , re.I)),
     ("media", re.compile(r"\b(tv|télé|tele|télévision|television|musique|spotify|média|media|volume|apple tv|chromecast)\b", re.I)),
     ("garden", re.compile(r"\b(jardin|plante|potager|haie|pelouse|tondeuse|paysagiste)\b", re.I)),
     ("calendar", re.compile(r"\b(calendrier|agenda|rendez.?vous|planning|demain|semaine|école|ecole|crèche|creche)\b", re.I)),
