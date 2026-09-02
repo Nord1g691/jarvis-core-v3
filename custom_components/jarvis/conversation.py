@@ -13,6 +13,7 @@ from .memory import (
     search_memories_async,
 )
 from .orchestrator import classify_request
+from .sentinel_events import recent_sentinel_events
 
 
 class JarvisConversationView(HomeAssistantView):
@@ -70,6 +71,14 @@ class JarvisConversationView(HomeAssistantView):
                 lines.append(f"- {state.name}: {message} | {start} → {end} | {location}")
             title = "Contexte calendrier Home Assistant"
         elif key == "sentinel":
+            for event in recent_sentinel_events(self.hass, 12):
+                related = ", ".join(event.get("related_categories_30s") or [])
+                suffix = f" | corrélé: {related}" if related else ""
+                lines.append(
+                    f"- événement {event.get('timestamp')}: {event.get('name')} "
+                    f"{event.get('old_state')}→{event.get('new_state')} "
+                    f"[{event.get('severity')}] ({event.get('category')}){suffix}"
+                )
             for state in states:
                 if state.domain == "camera":
                     lines.append(f"- caméra {state.name}: {state.state}")
