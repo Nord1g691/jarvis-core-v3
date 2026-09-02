@@ -76,8 +76,10 @@ class JarvisContextView(HomeAssistantView):
                     "frigate_audio_future": True,
                     "mail": False,
                     "documents": False,
-                    "suggestions": False,
-                    "agent_delegation": False,
+                    "suggestions": True,
+                    "agent_delegation_supported": True,
+                    "agent_delegation_requires_mapping": True,
+                    "structure_inventory": True,
                 },
             }
         )
