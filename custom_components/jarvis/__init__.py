@@ -15,6 +15,7 @@ from .context import JarvisContextView
 from .conversation import JarvisConversationView
 from .diagnostics import JarvisDiagnosticsView
 from .memory import JarvisMemoryView
+from .suggestions import JarvisSuggestionsView
 
 PLATFORMS = ["sensor"]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
@@ -30,6 +31,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     hass.http.register_view(JarvisContextView(hass))
     hass.http.register_view(JarvisBriefingView(hass))
     hass.http.register_view(JarvisDiagnosticsView(hass))
+    hass.http.register_view(JarvisSuggestionsView(hass))
     frontend_dir = Path(__file__).parent / "frontend"
     await hass.http.async_register_static_paths(
         [StaticPathConfig(FRONTEND_URL, str(frontend_dir), cache_headers=False)]
