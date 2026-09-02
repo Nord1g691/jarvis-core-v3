@@ -2,6 +2,7 @@
 await import('/jarvis_core/jarvis-panel.js?v=3.0.26');
 await import('/jarvis_core/jarvis-domains.js?v=3.0.26');
 await import('/jarvis_core/jarvis-settings.js?v=3.0.26');
+await import('/jarvis_core/jarvis-menu-harmony.js?v=3.0.26');
 await import('/jarvis_core/jarvis-smart-groups.js?v=3.0.26');
 await import('/jarvis_core/jarvis-agent-theme.js?v=3.0.26');
 await import('/jarvis_core/jarvis-agent-colors.js?v=3.0.26');
