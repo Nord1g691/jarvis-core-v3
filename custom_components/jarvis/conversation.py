@@ -136,6 +136,11 @@ class JarvisConversationView(HomeAssistantView):
             title = "Contexte énergie"
         elif key == "climate":
             for state in states:
+                if state.domain == "fan":
+                    percentage = state.attributes.get("percentage")
+                    suffix = f" | vitesse {percentage} %" if percentage is not None else ""
+                    lines.append(f"- {state.name}: {state.state}{suffix}")
+                    continue
                 if state.domain != "climate":
                     continue
                 cur = state.attributes.get("current_temperature")
