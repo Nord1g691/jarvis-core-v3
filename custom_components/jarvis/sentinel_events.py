@@ -30,6 +30,14 @@ def _store(hass: HomeAssistant) -> deque[dict[str, Any]]:
     return store
 
 
+def recent_sentinel_events(hass: HomeAssistant, limit: int = 20) -> list[dict[str, Any]]:
+    """Return recent events newest first without exposing the mutable buffer."""
+    safe_limit = max(1, min(100, int(limit)))
+    items = list(_store(hass))[-safe_limit:]
+    items.reverse()
+    return items
+
+
 def _relevant(state: State | None) -> bool:
     if state is None:
         return False
@@ -138,8 +146,7 @@ class JarvisSentinelEventsView(HomeAssistantView):
             limit = max(1, min(100, int(request.query.get("limit", "50"))))
         except ValueError:
             limit = 50
-        items = list(_store(self.hass))[-limit:]
-        items.reverse()
+        items = recent_sentinel_events(self.hass, limit)
         return self.json(
             {
                 "events": items,
