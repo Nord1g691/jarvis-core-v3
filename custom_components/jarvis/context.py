@@ -6,6 +6,7 @@ from homeassistant.components.http import HomeAssistantView
 from homeassistant.core import HomeAssistant
 
 from .orchestrator import agent_catalog
+from .sentinel import current_security_snapshot
 
 
 class JarvisContextView(HomeAssistantView):
@@ -57,30 +58,22 @@ class JarvisContextView(HomeAssistantView):
             )
         return items
 
-    def _sentinel_snapshot(self) -> dict[str, list[dict[str, str]]]:
-        cameras: list[dict[str, str]] = []
-        security: list[dict[str, str]] = []
-        for state in self._states():
-            if state.domain == "camera":
-                cameras.append({"entity_id": state.entity_id, "name": state.name, "state": state.state})
-            elif state.domain in {"alarm_control_panel", "lock", "binary_sensor"}:
-                device_class = str(state.attributes.get("device_class") or "")
-                if state.domain != "binary_sensor" or device_class in {
-                    "door", "window", "opening", "motion", "occupancy", "presence", "smoke", "moisture", "safety"
-                }:
-                    security.append({"entity_id": state.entity_id, "name": state.name, "state": state.state})
-        return {"cameras": cameras[:50], "security": security[:100]}
-
     async def get(self, request: web.Request) -> web.Response:
+        sentinel = current_security_snapshot(self.hass)
+        frigate = sentinel.get("providers", {}).get("frigate", {})
         return self.json(
             {
                 "home": self._home_summary(),
                 "calendar": self._calendar_snapshot(),
-                "sentinel": self._sentinel_snapshot(),
+                "sentinel": sentinel,
                 "agents": agent_catalog(),
                 "capabilities": {
                     "calendar": True,
                     "sentinel": True,
+                    "frigate_prepared": True,
+                    "frigate_available": bool(frigate.get("available")),
+                    "mqtt_available": bool(frigate.get("mqtt_available")),
+                    "frigate_audio_future": True,
                     "mail": False,
                     "documents": False,
                     "suggestions": False,
