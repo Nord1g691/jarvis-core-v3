@@ -1,4 +1,5 @@
 /* JARVIS Core V3.0.26 — global health score card + subtle core health ring. */
+await import('/jarvis_core/jarvis-core-sizing.js?v=3.0.26');
 const Panel=customElements.get('jarvis-panel');
 if(Panel&&!Panel.prototype.__jarvisHealthInstalled){
  const LABELS={core:'CORE',assist:'ASSIST',security:'SÉCURITÉ',memory:'MÉMOIRE',structure:'STRUCTURE'};
