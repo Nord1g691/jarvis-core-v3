@@ -22,6 +22,7 @@ await import('/jarvis_core/jarvis-entity-roles.js?v=3.0.26');
 await import('/jarvis_core/jarvis-persistent-settings.js?v=3.0.26');
 await import('/jarvis_core/jarvis-health.js?v=3.0.26');
 await import('/jarvis_core/jarvis-core-sizing.js?v=3.0.26');
+await import('/jarvis_core/jarvis-ui-coherence.js?v=3.0.26');
 
 const Panel=customElements.get('jarvis-panel');
 if(Panel&&!Panel.prototype.__jarvisRuntimePatched){
