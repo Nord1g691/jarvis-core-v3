@@ -1,9 +1,9 @@
-/* JARVIS Core V3.0.25 — focused runtime bridge. */
-await import('/jarvis_core/jarvis-panel.js?v=3.0.25');
-await import('/jarvis_core/jarvis-domains.js?v=3.0.25');
-await import('/jarvis_core/jarvis-settings.js?v=3.0.25');
-await import('/jarvis_core/jarvis-smart-groups.js?v=3.0.25');
-await import('/jarvis_core/jarvis-agent-theme.js?v=3.0.25');
+/* JARVIS Core V3.0.26 — focused runtime bridge. */
+await import('/jarvis_core/jarvis-panel.js?v=3.0.26');
+await import('/jarvis_core/jarvis-domains.js?v=3.0.26');
+await import('/jarvis_core/jarvis-settings.js?v=3.0.26');
+await import('/jarvis_core/jarvis-smart-groups.js?v=3.0.26');
+await import('/jarvis_core/jarvis-agent-theme.js?v=3.0.26');
 
 const Panel=customElements.get('jarvis-panel');
 if(Panel&&!Panel.prototype.__jarvisRuntimePatched){
@@ -15,7 +15,8 @@ if(Panel&&!Panel.prototype.__jarvisRuntimePatched){
   const root=this._core?.shadowRoot,state=root?.getElementById('state'),core=root?.getElementById('core');
   if(state&&core&&!root.getElementById('stateDock')){const dock=document.createElement('div');dock.id='stateDock';dock.style.cssText='text-align:center;letter-spacing:4px;font-size:12px;min-height:22px;margin:-4px auto 12px;transition:.25s;';core.insertAdjacentElement('afterend',dock);dock.appendChild(state);state.style.cssText='position:static;display:inline-block;pointer-events:none;'}
   const grid=root?.querySelector('.grid');
-  if(grid&&!root.getElementById('cardsDrawer')){const drawer=document.createElement('details');drawer.id='cardsDrawer';drawer.className='jarvis-cards-drawer';const summary=document.createElement('summary');summary.innerHTML='<span>▾ CARTES JARVIS</span><small>OUVRIR</small>';grid.parentNode.insertBefore(drawer,grid);drawer.appendChild(summary);drawer.appendChild(grid);const saved=localStorage.getItem('jarvis_cards_drawer_open');drawer.open=saved==='1';const sync=()=>{summary.querySelector('small').textContent=drawer.open?'FERMER':'OUVRIR';localStorage.setItem('jarvis_cards_drawer_open',drawer.open?'1':'0')};drawer.addEventListener('toggle',sync);sync();if(!root.getElementById('cardsDrawerStyle')){const style=document.createElement('style');style.id='cardsDrawerStyle';style.textContent='.jarvis-cards-drawer{max-width:950px;margin:0 auto 18px;border:1px solid #00eaff33;border-radius:10px;background:#03132288;overflow:hidden}.jarvis-cards-drawer>summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:42px;padding:0 14px;cursor:pointer;color:#8bd6ea;font-size:10px;letter-spacing:2px;user-select:none}.jarvis-cards-drawer>summary::-webkit-details-marker{display:none}.jarvis-cards-drawer>summary small{font-size:8px;letter-spacing:1px;opacity:.65}.jarvis-cards-drawer[open]>summary{border-bottom:1px solid #00eaff22}.jarvis-cards-drawer>.grid{padding:12px;box-sizing:border-box}';root.appendChild(style)}}
+  if(grid&&!root.getElementById('cardsDrawer')){const drawer=document.createElement('details');drawer.id='cardsDrawer';drawer.className='jarvis-cards-drawer';const summary=document.createElement('summary');summary.innerHTML='<span>▾ CARTES JARVIS</span><small>OUVRIR</small>';grid.parentNode.insertBefore(drawer,grid);drawer.appendChild(summary);drawer.appendChild(grid);const saved=localStorage.getItem('jarvis_cards_drawer_open');drawer.open=saved==='1';const sync=()=>{summary.querySelector('small').textContent=drawer.open?'FERMER':'OUVRIR';localStorage.setItem('jarvis_cards_drawer_open',drawer.open?'1':'0')};drawer.addEventListener('toggle',sync);sync();if(!root.getElementById('cardsDrawerStyle')){const style=document.createElement('style');style.id='cardsDrawerStyle';style.textContent='.jarvis-cards-drawer{max-width:950px;margin:0 auto 18px;border:1px solid #00eaff33;border-radius:10px;background:#03132288;overflow:hidden}.jarvis-cards-drawer>summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:42px;padding:0 14px;cursor:pointer;color:#8bd6ea;font-size:10px;letter-spacing:2px;user-select:none}.jarvis-cards-drawer>summary::-webkit-details-marker{display:none}.jarvis-cards-drawer[open]>summary{border-bottom:1px solid #00eaff22}.jarvis-cards-drawer>.grid{padding:12px;box-sizing:border-box}';root.appendChild(style)}}
+  this._applySystemDock?.();
  };
  Panel.prototype.__jarvisRuntimePatched=true;
 }
