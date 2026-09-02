@@ -12,6 +12,7 @@ await import('/jarvis_core/jarvis-quick-consumers.js?v=3.0.26');
 await import('/jarvis_core/jarvis-suggestions.js?v=3.0.26');
 await import('/jarvis_core/jarvis-agent-pipelines.js?v=3.0.26');
 await import('/jarvis_core/jarvis-structure-ui.js?v=3.0.26');
+await import('/jarvis_core/jarvis-visual-modes.js?v=3.0.26');
 
 const Panel=customElements.get('jarvis-panel');
 if(Panel&&!Panel.prototype.__jarvisRuntimePatched){
