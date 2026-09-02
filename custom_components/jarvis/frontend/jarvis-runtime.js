@@ -16,6 +16,8 @@ await import('/jarvis_core/jarvis-visual-modes.js?v=3.0.26');
 await import('/jarvis_core/jarvis-layout-modes.js?v=3.0.26');
 await import('/jarvis_core/jarvis-pro-polish.js?v=3.0.26');
 await import('/jarvis_core/jarvis-cinematic.js?v=3.0.26');
+await import('/jarvis_core/jarvis-agent-autonomy.js?v=3.0.26');
+await import('/jarvis_core/jarvis-entity-roles.js?v=3.0.26');
 
 const Panel=customElements.get('jarvis-panel');
 if(Panel&&!Panel.prototype.__jarvisRuntimePatched){
