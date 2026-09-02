@@ -1,5 +1,6 @@
 /* JARVIS Core V3.0.23 — focused runtime bridge. */
 await import('/jarvis_core/jarvis-panel.js?v=3.0.23');
+await import('/jarvis_core/jarvis-domains.js?v=3.0.23');
 
 const Panel=customElements.get('jarvis-panel');
 if(Panel&&!Panel.prototype.__jarvisRuntimePatched){
