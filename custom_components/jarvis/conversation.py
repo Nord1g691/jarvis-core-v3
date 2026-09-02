@@ -32,11 +32,11 @@ class JarvisConversationView(HomeAssistantView):
         if requested_pipeline:
             for pipeline in pipelines:
                 if pipeline.id == requested_pipeline or pipeline.name == requested_pipeline:
-                    return pipeline.conversation_engine, pipeline.name
+                    return pipeline.conversation_engine, pipeline.name, True
         preferred_agent = preferred.conversation_engine
         if preferred_agent:
-            return preferred_agent, preferred.name
-        return conversation.HOME_ASSISTANT_AGENT, preferred.name
+            return preferred_agent, preferred.name, False
+        return conversation.HOME_ASSISTANT_AGENT, preferred.name, False
 
     async def _memory_context(self, text: str) -> str:
         words = [w for w in text.casefold().split() if len(w) > 3]
@@ -77,7 +77,7 @@ class JarvisConversationView(HomeAssistantView):
                     lines.append(f"- {state.domain} {state.name}: {state.state}")
                 elif state.domain == "binary_sensor":
                     dc = str(state.attributes.get("device_class") or "")
-                    if dc in {"door", "window", "opening", "motion", "occupancy", "presence", "smoke", "moisture", "safety"}:
+                    if dc in {"door", "window", "opening", "motion", "occupancy", "presence", "smoke", "moisture", "safety", "sound", "gas", "carbon_monoxide"}:
                         lines.append(f"- {state.name} ({dc}): {state.state}")
             title = "Contexte Sentinel / sécurité"
         elif key == "energy":
@@ -121,6 +121,16 @@ class JarvisConversationView(HomeAssistantView):
                 if any(word in text for word in ("jardin", "arrosage", "potager", "tondeuse", "pluie", "precip")):
                     lines.append(f"- {state.name}: {state.state}")
             title = "Contexte jardin"
+        elif key == "technical":
+            for state in states:
+                if state.state in {"unavailable", "unknown"} and state.domain in {"automation", "script", "camera", "alarm_control_panel", "lock", "climate", "switch", "cover", "media_player", "conversation", "ai_task"}:
+                    lines.append(f"- indisponible {state.name} ({state.entity_id}): {state.state}")
+            title = "Contexte technique Home Assistant / JARVIS"
+        elif key == "home":
+            for state in states:
+                if state.domain in {"automation", "script", "scene", "input_boolean", "input_button", "input_text", "todo"} and "jarvis" in f"{state.entity_id} {state.name}".casefold():
+                    lines.append(f"- {state.name} ({state.entity_id}): {state.state}")
+            title = "Contexte Maison / structure JARVIS"
         else:
             return ""
 
@@ -158,9 +168,16 @@ class JarvisConversationView(HomeAssistantView):
         conversation_id = conversation_id.strip() if isinstance(conversation_id, str) and conversation_id.strip() else None
         requested_pipeline = data.get("pipeline")
         requested_pipeline = str(requested_pipeline).strip() or None if requested_pipeline is not None else None
+        pipeline_map = data.get("pipeline_map")
+        mapped_pipeline = None
+        if isinstance(pipeline_map, dict):
+            candidate = pipeline_map.get(str(route.get("agent") or "jarvis"))
+            if candidate is not None:
+                mapped_pipeline = str(candidate).strip() or None
+        selected_pipeline = mapped_pipeline or requested_pipeline
 
         try:
-            agent_id, pipeline_name = self._select_agent(requested_pipeline)
+            agent_id, pipeline_name, pipeline_matched = self._select_agent(selected_pipeline)
             memory_context = await self._memory_context(text)
             route_context = self._route_context(route)
             contextual_text = memory_context + route_context
@@ -180,6 +197,13 @@ class JarvisConversationView(HomeAssistantView):
             "agent_id": agent_id,
             "pipeline_name": pipeline_name,
             "orchestration": route,
+            "delegation": {
+                "active": bool(mapped_pipeline and pipeline_matched),
+                "route": str(route.get("agent") or "jarvis"),
+                "mapped_pipeline": mapped_pipeline,
+                "requested_pipeline": requested_pipeline,
+                "matched": pipeline_matched,
+            },
             "context_used": bool(route_context),
             "pipelines": [{"id": p.id, "name": p.name, "conversation_engine": p.conversation_engine} for p in self._pipelines()],
             "continue_conversation": response.get("continue_conversation", False) if isinstance(response, dict) else False,
