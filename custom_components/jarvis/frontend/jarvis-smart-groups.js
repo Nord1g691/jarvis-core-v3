@@ -1,0 +1,76 @@
+/* JARVIS Core V3.0.24 — smart room grouping and simplified card settings. */
+const Panel=customElements.get('jarvis-panel');
+if(Panel&&!Panel.prototype.__jarvisSmartGroupsInstalled){
+  Panel.prototype._registryValue=function(source,key){
+    if(!source||!key)return null;
+    if(source instanceof Map)return source.get(key)||null;
+    if(Array.isArray(source))return source.find(v=>v?.entity_id===key||v?.id===key)||null;
+    return source[key]||null;
+  };
+
+  Panel.prototype._entityArea=function(state){
+    const hass=this._hass||{};
+    const entity=this._registryValue(hass.entities,state?.entity_id);
+    const device=this._registryValue(hass.devices,entity?.device_id);
+    const areaId=entity?.area_id||device?.area_id||state?.attributes?.area_id||null;
+    const area=this._registryValue(hass.areas,areaId);
+    const name=area?.name||state?.attributes?.area_name||'';
+    return String(name||'Sans pièce');
+  };
+
+  Panel.prototype._groupDomainStates=function(domain){
+    const groups=new Map();
+    for(const state of this._domainStates?.(domain)||[]){
+      const area=this._entityArea(state);
+      if(!groups.has(area))groups.set(area,[]);
+      groups.get(area).push(state);
+    }
+    return [...groups.entries()].sort(([a],[b])=>{
+      if(a==='Sans pièce')return 1;
+      if(b==='Sans pièce')return -1;
+      return a.localeCompare(b,'fr');
+    });
+  };
+
+  Panel.prototype._renderDomain=function(cardId,domain){
+    const card=this._core?.shadowRoot?.getElementById(cardId),box=card?.querySelector('.jarvis-domain-list');if(!box)return;
+    const groups=this._groupDomainStates(domain);box.innerHTML='';
+    if(!groups.length){box.textContent='Aucune entité '+domain+' disponible.';return}
+    for(const [area,states] of groups){
+      const section=document.createElement('section');section.className='jarvis-area-group';
+      const title=document.createElement('div');title.className='jarvis-area-title';title.textContent=area;section.appendChild(title);
+      for(const s of states){
+        const row=document.createElement('div');row.className='jarvis-entity';const name=s.attributes?.friendly_name||s.entity_id;let detail=s.state;let action='';let label='';
+        if(domain==='light'){action=s.state==='on'?'turn_off':'turn_on';label=s.state==='on'?'ÉTEINDRE':'ALLUMER'}
+        if(domain==='climate'){const cur=s.attributes?.current_temperature,temp=s.attributes?.temperature;detail=`${s.state}${cur!=null?' · '+cur+'°':''}${temp!=null?' → '+temp+'°':''}`;action=s.state==='off'?'turn_on':'turn_off';label=s.state==='off'?'ACTIVER':'ARRÊTER'}
+        if(domain==='media_player'){const playing=['playing','paused'].includes(s.state);action=playing?'media_play_pause':'media_play';label=playing?'PLAY/PAUSE':'LECTURE';detail=s.attributes?.media_title||s.state}
+        row.innerHTML='<div><strong></strong><small></small></div><button type="button"></button>';row.querySelector('strong').textContent=name;row.querySelector('small').textContent=detail;const b=row.querySelector('button');b.textContent=label;b.classList.toggle('on',s.state==='on'||s.state==='playing');b.onclick=()=>this._callDomain(domain,action,s.entity_id);section.appendChild(row);
+      }
+      box.appendChild(section);
+    }
+    const root=this._core?.shadowRoot;if(root&&!root.getElementById('jarvisSmartGroupStyle')){const s=document.createElement('style');s.id='jarvisSmartGroupStyle';s.textContent='.jarvis-area-group{display:grid;gap:6px;padding:8px 0 2px}.jarvis-area-group+.jarvis-area-group{border-top:1px solid #00eaff18;margin-top:4px}.jarvis-area-title{font-size:9px;letter-spacing:1.4px;color:#8bd6ea;opacity:.85;text-transform:uppercase;padding:2px 2px 4px}';root.appendChild(s)}
+  };
+
+  const baseSettingsHtml=Panel.prototype._domainSettingsHtml;
+  if(baseSettingsHtml)Panel.prototype._domainSettingsHtml=function(domain){
+    const groups=this._groupDomainStates(domain);if(!groups.length)return '<div class="jarvis-setting-empty">Aucune entité disponible.</div>';
+    const originalStates=this._domainStates;
+    return groups.map(([area,states])=>{
+      this._domainStates=d=>d===domain?states:originalStates.call(this,d);
+      const body=baseSettingsHtml.call(this,domain);
+      this._domainStates=originalStates;
+      return `<div class="jarvis-setting-area"><div class="jarvis-setting-area-title">${this._escapeSetting(area)}</div>${body}</div>`;
+    }).join('');
+  };
+
+  const baseRenderCards=Panel.prototype._renderCards;
+  Panel.prototype._renderCards=function(){
+    baseRenderCards.call(this);
+    const box=this.shadowRoot?.getElementById('cards');if(!box)return;
+    box.querySelectorAll('.up,.down').forEach(el=>el.remove());
+    box.querySelectorAll('.row').forEach(row=>row.style.gridTemplateColumns='34px 1fr');
+    if(!this.shadowRoot.getElementById('jarvisSmartSettingsStyle')){const s=document.createElement('style');s.id='jarvisSmartSettingsStyle';s.textContent='.jarvis-setting-area{padding:5px 0}.jarvis-setting-area+.jarvis-setting-area{border-top:1px solid #00eaff18;margin-top:5px}.jarvis-setting-area-title{font-size:8px;letter-spacing:1.3px;color:#8bd6ea;text-transform:uppercase;padding:5px 0 3px}';this.shadowRoot.appendChild(s)}
+  };
+
+  Panel.prototype.__jarvisSmartGroupsInstalled=true;
+}
