@@ -16,10 +16,11 @@ if(Panel&&!Panel.prototype.__jarvisAgentThemeInstalled){
  Panel.prototype._jarvisThemeForAgent=function(label){return THEMES.find(t=>t.match.test(label||''))||DEFAULT};
  Panel.prototype._jarvisAgentLabel=function(){const root=this._core?.shadowRoot,select=root?.getElementById('pipelineSelect'),selected=select?.selectedOptions?.[0];return (selected?.textContent||select?.value||localStorage.getItem('jarvis_assist_pipeline')||'').trim()};
  Panel.prototype._jarvisFrenchVoices=function(){const voices=speechSynthesis?.getVoices?.()||[];const fr=voices.filter(v=>/^fr([_-]|$)/i.test(v.lang||''));return fr.length?fr:voices};
- Panel.prototype._jarvisApplyAgentTheme=function(){
+ Panel.prototype._jarvisApplyAgentTheme=function(labelOverride){
   const root=this._core?.shadowRoot;if(!root)return;
-  const t=this._jarvisThemeForAgent(this._jarvisAgentLabel());this._jarvisActiveTheme=t;
-  const app=root.querySelector('.app');if(app)app.dataset.jarvisAgent=t.name;
+  const label=(labelOverride||this._jarvisAgentLabel()||'').trim();
+  const t=this._jarvisThemeForAgent(label);this._jarvisActiveTheme=t;this._jarvisActiveAgentLabel=label;
+  const app=root.querySelector('.app');if(app){app.dataset.jarvisAgent=t.name;app.dataset.jarvisAgentLabel=label}
   root.host.style.setProperty('--jarvis-agent',t.color);root.host.style.setProperty('--jarvis-agent-soft',t.soft);root.host.style.setProperty('--jarvis-agent-faint',t.faint);root.host.style.setProperty('--jarvis-agent-text',t.text);
   let style=root.getElementById('jarvisAgentThemeStyle');
   if(!style){style=document.createElement('style');style.id='jarvisAgentThemeStyle';style.textContent=`
@@ -36,10 +37,7 @@ if(Panel&&!Panel.prototype.__jarvisAgentThemeInstalled){
    #stateDock{color:var(--jarvis-agent-text)!important;text-shadow:0 0 14px var(--jarvis-agent),0 0 24px var(--jarvis-agent-soft)!important}
   `;root.appendChild(style)}
  };
- Panel.prototype._jarvisInstallAgentVoice=function(){
-  if(!this._core)return;const panel=this;
-  this._core.speak=function(text){if(this.muted)return Promise.resolve();return new Promise(resolve=>{const t=panel._jarvisActiveTheme||DEFAULT;this.setState('JARVIS PARLE',t.color);const u=new SpeechSynthesisUtterance(text);u.lang='fr-FR';u.rate=t.rate||.92;u.pitch=t.pitch||1;u.volume=Math.max(0,Math.min(1,Number(panel._prefs?.volume??70)/100));const voices=panel._jarvisFrenchVoices();if(voices.length)u.voice=voices[Math.abs(Number(t.voice)||0)%voices.length];u.onend=()=>{this.setState('OPÉRATIONNEL',t.color);resolve()};u.onerror=()=>{this.setState('OPÉRATIONNEL',t.color);resolve()};speechSynthesis.cancel();speechSynthesis.speak(u)})};
- };
+ Panel.prototype._jarvisInstallAgentVoice=function(){if(!this._core)return;const panel=this;this._core.__jarvisThemePanel=this;this._core.speak=function(text){if(this.muted)return Promise.resolve();return new Promise(resolve=>{const t=panel._jarvisActiveTheme||DEFAULT;this.setState('JARVIS PARLE',t.color);const u=new SpeechSynthesisUtterance(text);u.lang='fr-FR';u.rate=t.rate||.92;u.pitch=t.pitch||1;u.volume=Math.max(0,Math.min(1,Number(panel._prefs?.volume??70)/100));const voices=panel._jarvisFrenchVoices();if(voices.length)u.voice=voices[Math.abs(Number(t.voice)||0)%voices.length];u.onend=()=>{this.setState('OPÉRATIONNEL',t.color);resolve()};u.onerror=()=>{this.setState('OPÉRATIONNEL',t.color);resolve()};speechSynthesis.cancel();speechSynthesis.speak(u)})}};
  const baseBoot=Panel.prototype._bootCore;
  Panel.prototype._bootCore=async function(){await baseBoot.call(this);this._jarvisApplyAgentTheme();this._jarvisInstallAgentVoice();const root=this._core?.shadowRoot,select=root?.getElementById('pipelineSelect');if(select&&!select.__jarvisThemeBound){select.addEventListener('change',()=>setTimeout(()=>{this._jarvisApplyAgentTheme();this._jarvisInstallAgentVoice()},0));select.__jarvisThemeBound=true}if(this._jarvisAgentThemeObserver)this._jarvisAgentThemeObserver.disconnect();if(select){const mo=new MutationObserver(()=>this._jarvisApplyAgentTheme());mo.observe(select,{childList:true,subtree:true,attributes:true});this._jarvisAgentThemeObserver=mo}};
  Panel.prototype.__jarvisAgentThemeInstalled=true;
