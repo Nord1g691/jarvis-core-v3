@@ -1,6 +1,7 @@
 /* JARVIS Core V3.0.27 — focused runtime bridge. */
 await import('/jarvis_core/jarvis-panel.js?v=3.0.27');
 await import('/jarvis_core/jarvis-domains.js?v=3.0.27');
+await import('/jarvis_core/jarvis-semantic-cards.js?v=3.0.27');
 await import('/jarvis_core/jarvis-settings.js?v=3.0.27');
 await import('/jarvis_core/jarvis-smart-groups.js?v=3.0.27');
 await import('/jarvis_core/jarvis-agent-theme.js?v=3.0.27');
