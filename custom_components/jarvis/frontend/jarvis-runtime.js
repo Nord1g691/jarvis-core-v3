@@ -8,6 +8,7 @@ await import('/jarvis_core/jarvis-agent-colors.js?v=3.0.26');
 await import('/jarvis_core/jarvis-enhancements.js?v=3.0.26');
 await import('/jarvis_core/jarvis-intelligence.js?v=3.0.26');
 await import('/jarvis_core/jarvis-absence.js?v=3.0.26');
+await import('/jarvis_core/jarvis-quick-consumers.js?v=3.0.26');
 
 const Panel=customElements.get('jarvis-panel');
 if(Panel&&!Panel.prototype.__jarvisRuntimePatched){
