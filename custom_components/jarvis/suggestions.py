@@ -9,6 +9,8 @@ from aiohttp import web
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.core import HomeAssistant
 
+from .settings_store import async_get_settings
+
 
 class JarvisSuggestionsView(HomeAssistantView):
     """Expose safe, read-only automation suggestions."""
@@ -20,19 +22,20 @@ class JarvisSuggestionsView(HomeAssistantView):
     def __init__(self, hass: HomeAssistant) -> None:
         self.hass = hass
 
-    def _state(self, entity_id: str):
+    def _state(self, entity_id: str | None):
+        if not entity_id:
+            return None
         return self.hass.states.get(entity_id)
 
-    def _entity_exists(self, entity_id: str) -> bool:
-        return self._state(entity_id) is not None
-
-    def _suggestions(self) -> list[dict[str, object]]:
+    async def _suggestions(self) -> list[dict[str, object]]:
+        settings = await async_get_settings(self.hass)
+        roles = settings.get("entity_roles", {}) if isinstance(settings, dict) else {}
         suggestions: list[dict[str, object]] = []
 
-        prod = self._state("sensor.envoy_122323101280_production_solaire_instantanee")
-        export = self._state("sensor.puissance_export_reseau")
-        chauffe_eau = self._state("switch.chauffe_eau")
-        voiture = self._state("switch.voiture_electrique_contacteur_1")
+        prod = self._state(str(roles.get("solar_production") or ""))
+        export = self._state(str(roles.get("grid_export") or ""))
+        chauffe_eau = self._state(str(roles.get("water_heater") or ""))
+        voiture = self._state(str(roles.get("ev_charger") or ""))
 
         if export and chauffe_eau:
             try:
@@ -49,6 +52,7 @@ class JarvisSuggestionsView(HomeAssistantView):
                         "confidence": 0.82,
                         "mode": "observe_only",
                         "requires_confirmation": True,
+                        "entities": [export.entity_id, chauffe_eau.entity_id],
                     }
                 )
 
@@ -67,6 +71,7 @@ class JarvisSuggestionsView(HomeAssistantView):
                         "confidence": 0.78,
                         "mode": "observe_only",
                         "requires_confirmation": True,
+                        "entities": [export.entity_id, voiture.entity_id],
                     }
                 )
 
@@ -85,6 +90,7 @@ class JarvisSuggestionsView(HomeAssistantView):
                     "confidence": 0.62,
                     "mode": "observe_only",
                     "requires_confirmation": True,
+                    "entities": [s.entity_id for s in open_covers[:12]],
                 }
             )
 
@@ -104,6 +110,7 @@ class JarvisSuggestionsView(HomeAssistantView):
                     "confidence": 0.9,
                     "mode": "observe_only",
                     "requires_confirmation": True,
+                    "entities": [s.entity_id for s in unavailable_critical[:20]],
                 }
             )
 
@@ -117,6 +124,7 @@ class JarvisSuggestionsView(HomeAssistantView):
                     "confidence": 0.5,
                     "mode": "observe_only",
                     "requires_confirmation": True,
+                    "entities": [prod.entity_id],
                 }
             )
 
@@ -127,6 +135,6 @@ class JarvisSuggestionsView(HomeAssistantView):
             {
                 "mode": "observe_only",
                 "can_write": False,
-                "suggestions": self._suggestions(),
+                "suggestions": await self._suggestions(),
             }
         )
