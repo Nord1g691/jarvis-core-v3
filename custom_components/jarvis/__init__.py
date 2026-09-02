@@ -10,6 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
 
 from .const import DOMAIN, FRONTEND_URL, PANEL_URL
+from .context import JarvisContextView
 from .conversation import JarvisConversationView
 from .memory import JarvisMemoryView
 
@@ -20,10 +21,11 @@ PANEL_MODULE = f"{FRONTEND_URL}/jarvis-runtime.js?v={ASSET_VERSION}"
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
-    """Set up JARVIS Core V3 and register its single frontend panel."""
+    """Set up JARVIS Core V3 and register its frontend and API views."""
     hass.data.setdefault(DOMAIN, {})
     hass.http.register_view(JarvisConversationView(hass))
     hass.http.register_view(JarvisMemoryView(hass))
+    hass.http.register_view(JarvisContextView(hass))
     frontend_dir = Path(__file__).parent / "frontend"
     await hass.http.async_register_static_paths(
         [StaticPathConfig(FRONTEND_URL, str(frontend_dir), cache_headers=False)]
