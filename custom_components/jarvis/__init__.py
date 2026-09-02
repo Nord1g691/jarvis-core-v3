@@ -9,6 +9,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
 
+from .briefing import JarvisBriefingView
 from .const import DOMAIN, FRONTEND_URL, PANEL_URL
 from .context import JarvisContextView
 from .conversation import JarvisConversationView
@@ -26,6 +27,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     hass.http.register_view(JarvisConversationView(hass))
     hass.http.register_view(JarvisMemoryView(hass))
     hass.http.register_view(JarvisContextView(hass))
+    hass.http.register_view(JarvisBriefingView(hass))
     frontend_dir = Path(__file__).parent / "frontend"
     await hass.http.async_register_static_paths(
         [StaticPathConfig(FRONTEND_URL, str(frontend_dir), cache_headers=False)]
