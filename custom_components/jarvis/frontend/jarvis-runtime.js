@@ -2,6 +2,7 @@
 await import('/jarvis_core/jarvis-panel.js?v=3.0.24');
 await import('/jarvis_core/jarvis-domains.js?v=3.0.24');
 await import('/jarvis_core/jarvis-settings.js?v=3.0.24');
+await import('/jarvis_core/jarvis-smart-groups.js?v=3.0.24');
 
 const Panel=customElements.get('jarvis-panel');
 if(Panel&&!Panel.prototype.__jarvisRuntimePatched){
