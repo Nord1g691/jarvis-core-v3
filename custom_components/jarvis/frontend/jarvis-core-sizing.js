@@ -6,7 +6,7 @@ if(Panel&&!Panel.prototype.__jarvisCoreSizingInstalled){
  const read=()=>{try{return clamp(localStorage.getItem(KEY)||100)}catch(_){return 100}};
  const save=v=>{try{localStorage.setItem(KEY,String(clamp(v)))}catch(_){}};
  Panel.prototype._jarvisCoreSize=function(){return read()};
- Panel.prototype._jarvisSetCoreSize=function(value){save(value);this._jarvisApplyCoreSize?.()};
+ Panel.prototype._jarvisSetCoreSize=function(value){const v=clamp(value);save(v);this._jarvisApplyCoreSize?.();this._jarvisPersistSetting?.('core_size',v)};
  Panel.prototype._jarvisApplyCoreSize=function(){
   const root=this._core?.shadowRoot;if(!root)return;
   root.host.style.setProperty('--jv-core-user-scale',String(read()/100));
