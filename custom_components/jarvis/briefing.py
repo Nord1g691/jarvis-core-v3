@@ -12,7 +12,7 @@ from homeassistant.components.http import HomeAssistantView
 from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 
-from .sentinel_provider import build_sentinel_snapshot
+from .sentinel import current_security_snapshot
 
 
 class JarvisBriefingView(HomeAssistantView):
@@ -98,11 +98,11 @@ class JarvisBriefingView(HomeAssistantView):
                 "alerts": self._alerts(),
                 "calendar": self._calendar(),
                 "energy": self._energy(),
-                "sentinel": build_sentinel_snapshot(self.hass),
+                "sentinel": current_security_snapshot(self.hass),
                 "capabilities": {
                     "absence_summary": True,
                     "briefing": True,
-                    "history_detail": False,
+                    "history_detail": True,
                     "proactive_notifications": False,
                 },
             }
