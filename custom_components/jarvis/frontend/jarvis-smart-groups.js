@@ -1,4 +1,4 @@
-/* JARVIS Core V3.0.24 — smart room grouping and simplified card settings. */
+/* JARVIS Core V3.0.25 — smart room grouping and simplified card settings. */
 const Panel=customElements.get('jarvis-panel');
 if(Panel&&!Panel.prototype.__jarvisSmartGroupsInstalled){
   Panel.prototype._registryValue=function(source,key){
@@ -8,13 +8,23 @@ if(Panel&&!Panel.prototype.__jarvisSmartGroupsInstalled){
     return source[key]||null;
   };
 
+  Panel.prototype._inferAreaFromName=function(state){
+    const text=String(`${state?.attributes?.friendly_name||''} ${state?.entity_id||''}`).toLowerCase();
+    const rules=[
+      ['Salle à manger',/salle.?a.?manger|sam\b/],['Salon',/salon|living/],['Cuisine',/cuisine|kitchen/],['Entrée',/entrée|entree|hall/],
+      ['Terrasse',/terrasse|patio/],['Jardin',/jardin|garden|potager|laurier|palmier/],['Piscine',/piscine|pool/],['Garage',/garage/],
+      ['Chambre',/chambre|bedroom/],['Salle de bain',/salle.?de.?bain|sdb|bathroom/],['Bureau',/bureau|office/],['Buanderie',/buanderie|laundry/]
+    ];
+    return rules.find(([,rx])=>rx.test(text))?.[0]||'';
+  };
+
   Panel.prototype._entityArea=function(state){
     const hass=this._hass||{};
     const entity=this._registryValue(hass.entities,state?.entity_id);
-    const device=this._registryValue(hass.devices,entity?.device_id);
+    const device=this._registryValue(hass.devices,entity?.device_id||state?.attributes?.device_id);
     const areaId=entity?.area_id||device?.area_id||state?.attributes?.area_id||null;
     const area=this._registryValue(hass.areas,areaId);
-    const name=area?.name||state?.attributes?.area_name||'';
+    const name=area?.name||state?.attributes?.area_name||this._inferAreaFromName(state)||'';
     return String(name||'Sans pièce');
   };
 
@@ -25,11 +35,7 @@ if(Panel&&!Panel.prototype.__jarvisSmartGroupsInstalled){
       if(!groups.has(area))groups.set(area,[]);
       groups.get(area).push(state);
     }
-    return [...groups.entries()].sort(([a],[b])=>{
-      if(a==='Sans pièce')return 1;
-      if(b==='Sans pièce')return -1;
-      return a.localeCompare(b,'fr');
-    });
+    return [...groups.entries()].sort(([a],[b])=>{if(a==='Sans pièce')return 1;if(b==='Sans pièce')return -1;return a.localeCompare(b,'fr')});
   };
 
   Panel.prototype._renderDomain=function(cardId,domain){
@@ -40,11 +46,13 @@ if(Panel&&!Panel.prototype.__jarvisSmartGroupsInstalled){
       const section=document.createElement('section');section.className='jarvis-area-group';
       const title=document.createElement('div');title.className='jarvis-area-title';title.textContent=area;section.appendChild(title);
       for(const s of states){
-        const row=document.createElement('div');row.className='jarvis-entity';const name=s.attributes?.friendly_name||s.entity_id;let detail=s.state;let action='';let label='';
-        if(domain==='light'){action=s.state==='on'?'turn_off':'turn_on';label=s.state==='on'?'ÉTEINDRE':'ALLUMER'}
-        if(domain==='climate'){const cur=s.attributes?.current_temperature,temp=s.attributes?.temperature;detail=`${s.state}${cur!=null?' · '+cur+'°':''}${temp!=null?' → '+temp+'°':''}`;action=s.state==='off'?'turn_on':'turn_off';label=s.state==='off'?'ACTIVER':'ARRÊTER'}
-        if(domain==='media_player'){const playing=['playing','paused'].includes(s.state);action=playing?'media_play_pause':'media_play';label=playing?'PLAY/PAUSE':'LECTURE';detail=s.attributes?.media_title||s.state}
-        row.innerHTML='<div><strong></strong><small></small></div><button type="button"></button>';row.querySelector('strong').textContent=name;row.querySelector('small').textContent=detail;const b=row.querySelector('button');b.textContent=label;b.classList.toggle('on',s.state==='on'||s.state==='playing');b.onclick=()=>this._callDomain(domain,action,s.entity_id);section.appendChild(row);
+        const row=document.createElement('div');row.className='jarvis-entity';const name=s.attributes?.friendly_name||s.entity_id;let detail=s.state;let actions=[];
+        if(domain==='light')actions=[[s.state==='on'?'turn_off':'turn_on',s.state==='on'?'ÉTEINDRE':'ALLUMER']];
+        if(domain==='climate'){const cur=s.attributes?.current_temperature,temp=s.attributes?.temperature;detail=`${s.state}${cur!=null?' · '+cur+'°':''}${temp!=null?' → '+temp+'°':''}`;actions=[[s.state==='off'?'turn_on':'turn_off',s.state==='off'?'ACTIVER':'ARRÊTER']]}
+        if(domain==='media_player'){const playing=['playing','paused'].includes(s.state);actions=[[playing?'media_play_pause':'media_play',playing?'PLAY/PAUSE':'LECTURE']];detail=s.attributes?.media_title||s.state}
+        if(domain==='cover'){const pos=s.attributes?.current_position;detail=pos!=null?`${s.state} · ${pos}%`:s.state;actions=[['open_cover','▲'],['stop_cover','■'],['close_cover','▼']]}
+        if(domain==='switch')actions=[[s.state==='on'?'turn_off':'turn_on',s.state==='on'?'COUPER':'ACTIVER']];
+        row.innerHTML='<div><strong></strong><small></small></div><div class="jarvis-cover-actions"></div>';row.querySelector('strong').textContent=name;row.querySelector('small').textContent=detail;const actionBox=row.querySelector('.jarvis-cover-actions');actions.forEach(([action,label])=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.classList.toggle('on',s.state==='on'||s.state==='playing'||(domain==='cover'&&s.state==='open'));b.onclick=()=>this._callDomain(domain,action,s.entity_id);actionBox.appendChild(b)});section.appendChild(row);
       }
       box.appendChild(section);
     }
@@ -55,12 +63,8 @@ if(Panel&&!Panel.prototype.__jarvisSmartGroupsInstalled){
   if(baseSettingsHtml)Panel.prototype._domainSettingsHtml=function(domain){
     const groups=this._groupDomainStates(domain);if(!groups.length)return '<div class="jarvis-setting-empty">Aucune entité disponible.</div>';
     const originalStates=this._domainStates;
-    return groups.map(([area,states])=>{
-      this._domainStates=d=>d===domain?states:originalStates.call(this,d);
-      const body=baseSettingsHtml.call(this,domain);
-      this._domainStates=originalStates;
-      return `<div class="jarvis-setting-area"><div class="jarvis-setting-area-title">${this._escapeSetting(area)}</div>${body}</div>`;
-    }).join('');
+    try{return groups.map(([area,states])=>{this._domainStates=d=>d===domain?states:originalStates.call(this,d);const body=baseSettingsHtml.call(this,domain);return `<div class="jarvis-setting-area"><div class="jarvis-setting-area-title">${this._escapeSetting(area)}</div>${body}</div>`}).join('')}
+    finally{this._domainStates=originalStates}
   };
 
   const baseRenderCards=Panel.prototype._renderCards;
