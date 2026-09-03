@@ -40,17 +40,17 @@ if(Panel&&!Panel.prototype.__jarvisUiCoherenceInstalled){
   return true;
  };
  Panel.prototype._jarvisApplyConnectivity=function(){
-  const core=this._core,root=core?.shadowRoot;if(!core||!root)return;
+  const host=this._core,root=host?.shadowRoot;if(!host||!root)return;
   const online=this._jarvisConnectionAlive();
-  const app=root.querySelector('.app'),state=root.getElementById('state');
+  const app=root.querySelector('.app'),state=root.getElementById('state'),visualCore=root.getElementById('core');
   app?.classList.toggle('jarvis-offline',!online);
-  core.classList.toggle('jv-offline',!online);
-  core.toggleAttribute('data-jarvis-offline',!online);
+  visualCore?.classList.toggle('jv-offline',!online);
+  if(!online)host.setAttribute('data-jarvis-offline','1');else host.removeAttribute('data-jarvis-offline');
   if(!online){
-   if(state?.textContent!=='HORS LIGNE')core.setState?.('HORS LIGNE','#ff4050');
+   if(state?.textContent!=='HORS LIGNE')host.setState?.('HORS LIGNE','#ff4050');
    return;
   }
-  if(state?.textContent==='HORS LIGNE'||state?.textContent==='INITIALISATION')core.setState?.('OPÉRATIONNEL',this._jarvisActiveTheme?.color||'#00eaff');
+  if(state?.textContent==='HORS LIGNE'||state?.textContent==='INITIALISATION')host.setState?.('OPÉRATIONNEL',this._jarvisActiveTheme?.color||'#00eaff');
  };
  Panel.prototype._jarvisInstallCoherentHud=function(){
   const root=this._core?.shadowRoot,core=root?.getElementById('core'),state=root?.getElementById('state');if(!root||!core)return;
