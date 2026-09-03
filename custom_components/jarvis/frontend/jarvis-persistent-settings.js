@@ -1,6 +1,7 @@
 /* JARVIS Core V3.0.26 — persistent settings bridge with local fallback. */
 await import('/jarvis_core/jarvis-premium-core.js?v=3.0.26');
 await import('/jarvis_core/jarvis-premium-state.js?v=3.0.26');
+await import('/jarvis_core/jarvis-premium-polish.js?v=3.0.26');
 const Panel=customElements.get('jarvis-panel');
 if(Panel&&!Panel.prototype.__jarvisPersistentSettingsInstalled){
  const LOCAL_KEYS={
