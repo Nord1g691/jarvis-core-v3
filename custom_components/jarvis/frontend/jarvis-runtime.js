@@ -2,6 +2,7 @@
 await import('/jarvis_core/jarvis-panel.js?v=3.0.26');
 await import('/jarvis_core/jarvis-domains.js?v=3.0.26');
 await import('/jarvis_core/jarvis-settings.js?v=3.0.26');
+await import('/jarvis_core/jarvis-menu-harmony.js?v=3.0.26');
 await import('/jarvis_core/jarvis-smart-groups.js?v=3.0.26');
 await import('/jarvis_core/jarvis-agent-theme.js?v=3.0.26');
 await import('/jarvis_core/jarvis-agent-colors.js?v=3.0.26');
@@ -13,6 +14,10 @@ await import('/jarvis_core/jarvis-suggestions.js?v=3.0.26');
 await import('/jarvis_core/jarvis-agent-pipelines.js?v=3.0.26');
 await import('/jarvis_core/jarvis-structure-ui.js?v=3.0.26');
 await import('/jarvis_core/jarvis-visual-modes.js?v=3.0.26');
+await import('/jarvis_core/jarvis-premium-core.js?v=3.0.26');
+await import('/jarvis_core/jarvis-premium-state.js?v=3.0.26');
+await import('/jarvis_core/jarvis-premium-choreography.js?v=3.0.26');
+await import('/jarvis_core/jarvis-premium-polish.js?v=3.0.26');
 await import('/jarvis_core/jarvis-layout-modes.js?v=3.0.26');
 await import('/jarvis_core/jarvis-pro-polish.js?v=3.0.26');
 await import('/jarvis_core/jarvis-cinematic.js?v=3.0.26');
@@ -21,6 +26,7 @@ await import('/jarvis_core/jarvis-entity-roles.js?v=3.0.26');
 await import('/jarvis_core/jarvis-persistent-settings.js?v=3.0.26');
 await import('/jarvis_core/jarvis-health.js?v=3.0.26');
 await import('/jarvis_core/jarvis-core-sizing.js?v=3.0.26');
+await import('/jarvis_core/jarvis-ui-coherence.js?v=3.0.26');
 
 const Panel=customElements.get('jarvis-panel');
 if(Panel&&!Panel.prototype.__jarvisRuntimePatched){

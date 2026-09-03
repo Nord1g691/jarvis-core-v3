@@ -9,7 +9,7 @@ from homeassistant.core import HomeAssistant
 from .const import DOMAIN
 from .memory import search_memories_async
 from .sentinel import current_security_snapshot
-from .sentinel_events import recent_sentinel_events
+from .sentinel_events import SECURITY_CLASSES, recent_sentinel_events
 
 
 class JarvisDiagnosticsView(HomeAssistantView):
@@ -30,8 +30,24 @@ class JarvisDiagnosticsView(HomeAssistantView):
         items = []
         for state in self.hass.states.async_all():
             if state.domain in important_domains and state.state in {"unavailable", "unknown"}:
-                items.append({"entity_id": state.entity_id, "name": state.name, "state": state.state})
+                items.append(
+                    {
+                        "entity_id": state.entity_id,
+                        "name": state.name,
+                        "state": state.state,
+                        "device_class": str(state.attributes.get("device_class") or ""),
+                    }
+                )
         return items[:100]
+
+    @staticmethod
+    def _is_security_unavailable(item: dict[str, str]) -> bool:
+        domain = item["entity_id"].split(".", 1)[0]
+        if domain in {"camera", "alarm_control_panel", "lock"}:
+            return True
+        if domain == "binary_sensor":
+            return item.get("device_class", "") in SECURITY_CLASSES
+        return False
 
     def _pipelines(self) -> list[dict[str, str | None]]:
         try:
@@ -58,10 +74,7 @@ class JarvisDiagnosticsView(HomeAssistantView):
         pipelines = self._pipelines()
         memories = await search_memories_async(self.hass, "", 500)
         events = recent_sentinel_events(self.hass, 50)
-        critical_unavailable = [
-            item for item in unavailable
-            if item["entity_id"].split(".", 1)[0] in {"camera", "alarm_control_panel", "lock", "binary_sensor"}
-        ]
+        critical_unavailable = [item for item in unavailable if self._is_security_unavailable(item)]
         critical_events = [item for item in events if item.get("severity") == "critical"]
         components = self.hass.config.components
         states = self.hass.states
