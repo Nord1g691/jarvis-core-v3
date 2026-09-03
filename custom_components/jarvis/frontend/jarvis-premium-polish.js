@@ -4,6 +4,13 @@ if(Panel&&!Panel.prototype.__jarvisPremiumPolishInstalled){
  Panel.prototype._jarvisPremiumPolish=function(){
   const root=this._core?.shadowRoot;if(!root||root.getElementById('jarvisPremiumPolishStyle'))return;
   const s=document.createElement('style');s.id='jarvisPremiumPolishStyle';s.textContent=`
+   /* Premium owns its own 3D scene: never let generic non-Classic polish clip it. */
+   :host([data-visual-mode="premium"]) .core{contain:none!important;overflow:visible!important;transform-style:preserve-3d!important}
+   :host([data-visual-mode="premium"]) .jv-premium-stage{overflow:visible!important;transform-style:preserve-3d!important}
+   :host([data-visual-mode="premium"]) .jv-cinema::before{opacity:.045!important}
+   :host([data-visual-mode="premium"]) .jv-cinema::after{opacity:.38!important}
+   :host([data-visual-mode="premium"]) .jv-telemetry{display:none!important}
+
    :host([data-visual-mode="premium"]) .jvp-spark{transform:rotate(calc(var(--i) * 10deg)) translateY(-44%)!important;opacity:.42}
    :host([data-visual-mode="premium"]) .jvp-tick{opacity:.42}
    :host([data-visual-mode="premium"]) .jvp-ring,:host([data-visual-mode="premium"]) .jvp-arc,:host([data-visual-mode="premium"]) .jvp-mesh{will-change:transform,opacity}
