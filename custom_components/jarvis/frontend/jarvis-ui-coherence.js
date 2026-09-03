@@ -1,4 +1,5 @@
 /* JARVIS Core V3.0.26 — unified HUD state, card ordering and mobile orientation. */
+await import('/jarvis_core/jarvis-premium-core.js?v=3.0.26');
 const Panel=customElements.get('jarvis-panel');
 if(Panel&&!Panel.prototype.__jarvisUiCoherenceInstalled){
  const EXTRA_CARDS={
@@ -43,6 +44,8 @@ if(Panel&&!Panel.prototype.__jarvisUiCoherenceInstalled){
   const online=this._jarvisConnectionAlive();
   const app=root.querySelector('.app'),state=root.getElementById('state');
   app?.classList.toggle('jarvis-offline',!online);
+  core.classList.toggle('jv-offline',!online);
+  core.toggleAttribute('data-jarvis-offline',!online);
   if(!online){
    if(state?.textContent!=='HORS LIGNE')core.setState?.('HORS LIGNE','#ff4050');
    return;
