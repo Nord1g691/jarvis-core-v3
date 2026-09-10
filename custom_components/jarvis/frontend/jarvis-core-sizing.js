@@ -1,4 +1,4 @@
-/* JARVIS Core V3.0.27 — responsive + user adjustable core sizing + visual polish. */
+/* JARVIS Core V3.0.27 — responsive sizing + cinematic core polish. */
 const Panel=customElements.get('jarvis-panel');
 if(Panel&&!Panel.prototype.__jarvisCoreSizingInstalled){
  const KEY='jarvis_core_size_v326';
@@ -21,7 +21,7 @@ if(Panel&&!Panel.prototype.__jarvisCoreSizingInstalled){
   root.host.style.setProperty('--jv-core-final-size',px+'px');
  };
  Panel.prototype._jarvisCoreSizingCss=function(){return `
- :host{--jv-core-final-size:360px}
+ :host{--jv-core-final-size:360px;--jv-core-state:#00eaff;--jv-core-state-soft:rgba(0,234,255,.34)}
  .core{
    width:var(--jv-core-final-size)!important;
    height:var(--jv-core-final-size)!important;
@@ -31,14 +31,54 @@ if(Panel&&!Panel.prototype.__jarvisCoreSizingInstalled){
    overflow:visible!important;
    margin-top:12px!important;
    margin-bottom:46px!important;
+   isolation:isolate;
  }
- .ring{box-sizing:border-box!important;transform-origin:center center!important}
+ .ring{box-sizing:border-box!important;transform-origin:center center!important;transition:border-color .3s ease,box-shadow .3s ease,opacity .3s ease}
  .ring.r1{
    inset:5px!important;
-   border:1.5px solid rgba(0,234,255,.58)!important;
-   box-shadow:0 0 10px rgba(0,234,255,.16),inset 0 0 8px rgba(0,234,255,.08)!important;
+   border:1.5px solid color-mix(in srgb,var(--jv-core-state) 58%,transparent)!important;
+   box-shadow:0 0 12px var(--jv-core-state-soft),inset 0 0 8px rgba(0,234,255,.08)!important;
    opacity:1!important;
  }
+ .jv-energy-wave,.jv-tech-ticks,.jv-boot-scan{
+   position:absolute;pointer-events:none;border-radius:50%;inset:-4.5%;z-index:-1
+ }
+ .jv-energy-wave{
+   background:
+    radial-gradient(circle,transparent 67%,color-mix(in srgb,var(--jv-core-state) 12%,transparent) 68%,transparent 72%),
+    repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--jv-core-state) 42%,transparent) 0 1deg,transparent 1deg 5deg);
+   -webkit-mask:radial-gradient(circle,transparent 65%,#000 67% 71%,transparent 73%);
+   mask:radial-gradient(circle,transparent 65%,#000 67% 71%,transparent 73%);
+   opacity:.34;
+   filter:drop-shadow(0 0 6px var(--jv-core-state-soft));
+   animation:jvWaveIdle 8s linear infinite;
+   transition:opacity .3s ease,filter .3s ease;
+ }
+ .jv-tech-ticks{
+   inset:-1.5%;
+   background:repeating-conic-gradient(from -90deg,color-mix(in srgb,var(--jv-core-state) 55%,transparent) 0 .75deg,transparent .75deg 6deg);
+   -webkit-mask:radial-gradient(circle,transparent 91%,#000 92% 95%,transparent 96%);
+   mask:radial-gradient(circle,transparent 91%,#000 92% 95%,transparent 96%);
+   opacity:.5;
+   animation:jvTicksDrift 22s linear infinite reverse;
+ }
+ .jv-boot-scan{
+   inset:7%;
+   border:1px solid color-mix(in srgb,var(--jv-core-state) 55%,transparent);
+   box-shadow:0 0 18px var(--jv-core-state-soft),inset 0 0 18px var(--jv-core-state-soft);
+   opacity:0;
+ }
+ .core.state-listen{--jv-core-state:#39ff88;--jv-core-state-soft:rgba(57,255,136,.34)}
+ .core.state-think{--jv-core-state:#ffb000;--jv-core-state-soft:rgba(255,176,0,.38)}
+ .core.state-search{--jv-core-state:#00eaff;--jv-core-state-soft:rgba(0,234,255,.38)}
+ .core.state-speak{--jv-core-state:#b56cff;--jv-core-state-soft:rgba(181,108,255,.38)}
+ .core.state-listen .jv-energy-wave{opacity:.7;animation:jvWaveListen 1.8s ease-in-out infinite}
+ .core.state-think .jv-energy-wave{opacity:.95;animation:jvWaveThink .95s linear infinite;filter:drop-shadow(0 0 11px var(--jv-core-state-soft))}
+ .core.state-search .jv-energy-wave{opacity:.78;animation:jvWaveSearch 1.4s linear infinite}
+ .core.state-speak .jv-energy-wave{opacity:.82;animation:jvWaveSpeak .72s ease-in-out infinite}
+ .core.state-think .jv-tech-ticks{opacity:.9;animation-duration:4.8s}
+ .core.state-listen .jv-tech-ticks{opacity:.72;animation-duration:10s}
+ .core.state-speak .jv-tech-ticks{opacity:.82;animation-duration:7s}
  .label{
    bottom:-31px!important;
    left:50%!important;
@@ -51,7 +91,8 @@ if(Panel&&!Panel.prototype.__jarvisCoreSizingInstalled){
    padding:5px 12px!important;
    border-radius:999px!important;
    background:rgba(2,7,17,.78)!important;
-   border:1px solid rgba(0,234,255,.18)!important;
+   border:1px solid color-mix(in srgb,var(--jv-core-state) 22%,transparent)!important;
+   color:var(--jv-core-state)!important;
    backdrop-filter:blur(6px)!important;
    z-index:20!important;
  }
@@ -79,10 +120,29 @@ if(Panel&&!Panel.prototype.__jarvisCoreSizingInstalled){
  }
  .core.state-think .label{animation:jvThinkLabel 1.4s ease-in-out infinite!important}
  .core.state-think .soul{opacity:1!important;filter:drop-shadow(0 0 7px rgba(255,176,0,.65))}
+ .core.jv-booting .ring{opacity:0!important;animation:jvBuildRing .62s cubic-bezier(.2,.8,.2,1) forwards!important}
+ .core.jv-booting .r5{animation-delay:.12s!important}.core.jv-booting .r4{animation-delay:.3s!important}.core.jv-booting .r3{animation-delay:.48s!important}.core.jv-booting .r2{animation-delay:.66s!important}.core.jv-booting .r1{animation-delay:.84s!important}
+ .core.jv-booting .glow{opacity:0;animation:jvBuildCore .8s ease-out .08s forwards!important}
+ .core.jv-booting .leds{opacity:0;animation:jvBuildLeds .9s ease-out 1.05s forwards!important}
+ .core.jv-booting .jv-tech-ticks{opacity:0;animation:jvBuildTicks .8s ease-out 1.3s forwards!important}
+ .core.jv-booting .jv-energy-wave{opacity:0;animation:jvBuildWave 1s ease-out 1.6s forwards!important}
+ .core.jv-booting .jv-boot-scan{animation:jvBootScan 2.25s ease-in-out .1s forwards!important}
  @keyframes jvThinkPulse{0%,100%{transform:scale(.94);opacity:.35}50%{transform:scale(1.07);opacity:1}}
  @keyframes jvThinkSpin{from{transform:rotate(0deg) scale(.96)}to{transform:rotate(360deg) scale(.96)}}
  @keyframes jvThinkCore{0%,100%{transform:scale(.96);opacity:.86}50%{transform:scale(1.13);opacity:1}}
  @keyframes jvThinkLabel{0%,100%{letter-spacing:4px;opacity:.72}50%{letter-spacing:5.5px;opacity:1}}
+ @keyframes jvWaveIdle{from{transform:rotate(0deg) scale(1)}50%{transform:rotate(180deg) scale(1.018)}to{transform:rotate(360deg) scale(1)}}
+ @keyframes jvWaveListen{0%,100%{transform:scale(.97);opacity:.45}50%{transform:scale(1.045);opacity:.9}}
+ @keyframes jvWaveThink{from{transform:rotate(0deg) scale(1)}50%{transform:rotate(180deg) scale(1.035)}to{transform:rotate(360deg) scale(1)}}
+ @keyframes jvWaveSearch{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
+ @keyframes jvWaveSpeak{0%,100%{transform:scale(.985);filter:drop-shadow(0 0 5px var(--jv-core-state-soft))}50%{transform:scale(1.055);filter:drop-shadow(0 0 13px var(--jv-core-state-soft))}}
+ @keyframes jvTicksDrift{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+ @keyframes jvBuildRing{0%{opacity:0;transform:scale(.35) rotate(-35deg)}70%{opacity:.9}100%{opacity:1;transform:scale(1) rotate(0deg)}}
+ @keyframes jvBuildCore{0%{opacity:0;transform:scale(.15)}60%{opacity:1;transform:scale(1.16)}100%{opacity:1;transform:scale(1)}}
+ @keyframes jvBuildLeds{0%{opacity:0;filter:blur(5px)}100%{opacity:1;filter:none}}
+ @keyframes jvBuildTicks{0%{opacity:0;transform:rotate(-60deg) scale(.9)}100%{opacity:.5;transform:rotate(0deg) scale(1)}}
+ @keyframes jvBuildWave{0%{opacity:0;transform:scale(.7)}70%{opacity:.62;transform:scale(1.05)}100%{opacity:.34;transform:scale(1)}}
+ @keyframes jvBootScan{0%{opacity:0;transform:scale(.2)}35%{opacity:.95}75%{opacity:.42;transform:scale(1.18)}100%{opacity:0;transform:scale(1.36)}}
  @media(orientation:landscape) and (max-height:650px){
    .core{margin-top:6px!important;margin-bottom:38px!important;position:relative!important;top:auto!important}
    .label{bottom:-27px!important}
@@ -92,11 +152,23 @@ if(Panel&&!Panel.prototype.__jarvisCoreSizingInstalled){
    .core{max-height:calc(100vh - 132px)!important;margin-bottom:34px!important}
    .label{bottom:-25px!important;font-size:10px!important}
  }
+ @media(prefers-reduced-motion:reduce){
+   .jv-energy-wave,.jv-tech-ticks,.core.jv-booting *{animation:none!important}
+   .core.jv-booting .ring,.core.jv-booting .glow,.core.jv-booting .leds{opacity:1!important}
+ }
  `};
+ Panel.prototype._jarvisInstallCoreVisuals=function(){
+  const root=this._core?.shadowRoot,core=root?.getElementById('core');if(!root||!core)return;
+  if(!core.querySelector('.jv-energy-wave')){const wave=document.createElement('div');wave.className='jv-energy-wave';core.prepend(wave)}
+  if(!core.querySelector('.jv-tech-ticks')){const ticks=document.createElement('div');ticks.className='jv-tech-ticks';core.prepend(ticks)}
+  if(!core.querySelector('.jv-boot-scan')){const scan=document.createElement('div');scan.className='jv-boot-scan';core.prepend(scan)}
+  if(!core.dataset.jarvisBootPlayed){core.dataset.jarvisBootPlayed='1';core.classList.add('jv-booting');setTimeout(()=>core.classList.remove('jv-booting'),2750)}
+ };
  Panel.prototype._jarvisInstallCoreSizing=function(){
   const root=this._core?.shadowRoot;if(!root)return;
   if(!root.getElementById('jarvisCoreSizingStyle')){const s=document.createElement('style');s.id='jarvisCoreSizingStyle';s.textContent=this._jarvisCoreSizingCss();root.appendChild(s)}
   this._jarvisApplyCoreSize();
+  this._jarvisInstallCoreVisuals();
   if(!this.__jarvisCoreResizeHandler){this.__jarvisCoreResizeHandler=()=>requestAnimationFrame(()=>this._jarvisApplyCoreSize?.());window.addEventListener('resize',this.__jarvisCoreResizeHandler,{passive:true});window.addEventListener('orientationchange',this.__jarvisCoreResizeHandler,{passive:true})}
  };
  const baseRender=Panel.prototype._renderCards;
