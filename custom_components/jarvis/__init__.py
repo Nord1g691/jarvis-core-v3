@@ -26,9 +26,9 @@ from .suggestions import JarvisSuggestionsView
 
 PLATFORMS = ["sensor"]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
-ASSET_VERSION = "3.0.27"
+ASSET_VERSION = "3.0.28"
 PANEL_ELEMENT = "jarvis-panel-v3027"
-PANEL_MODULE = f"{FRONTEND_URL}/jarvis-runtime.js?v={ASSET_VERSION}"
+PANEL_MODULE = f"{FRONTEND_URL}/jarvis-runtime-3.0.28.js?v={ASSET_VERSION}"
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
