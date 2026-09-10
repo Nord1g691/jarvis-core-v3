@@ -1,4 +1,4 @@
-"""JARVIS Core V3 Home Assistant integration."""
+"""JARVIS Core V4 Home Assistant integration."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -26,13 +26,13 @@ from .suggestions import JarvisSuggestionsView
 
 PLATFORMS = ["sensor"]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
-ASSET_VERSION = "3.0.28"
-PANEL_ELEMENT = "jarvis-panel-v3027"
-PANEL_MODULE = f"{FRONTEND_URL}/jarvis-runtime-3.0.28.js?v={ASSET_VERSION}"
+ASSET_VERSION = "4.0.0"
+PANEL_ELEMENT = "jarvis-panel-v4"
+PANEL_MODULE = f"{FRONTEND_URL}/jarvis-runtime-v4.js?v={ASSET_VERSION}"
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
-    """Set up JARVIS Core V3 and register its frontend and API views."""
+    """Set up JARVIS Core V4 and register its frontend and API views."""
     hass.data.setdefault(DOMAIN, {})
     hass.http.register_view(JarvisConversationView(hass))
     hass.http.register_view(JarvisMemoryView(hass))
