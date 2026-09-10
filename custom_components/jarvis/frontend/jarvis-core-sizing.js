@@ -1,4 +1,4 @@
-/* JARVIS Core V3.0.26 — responsive + user adjustable core sizing. */
+/* JARVIS Core V3.0.27 — responsive + user adjustable core sizing + visual polish. */
 const Panel=customElements.get('jarvis-panel');
 if(Panel&&!Panel.prototype.__jarvisCoreSizingInstalled){
  const KEY='jarvis_core_size_v326';
@@ -7,24 +7,91 @@ if(Panel&&!Panel.prototype.__jarvisCoreSizingInstalled){
  const save=v=>{try{localStorage.setItem(KEY,String(clamp(v)))}catch(_){}};
  const autoBase=()=>{
   const w=Math.max(320,window.innerWidth||320),h=Math.max(240,window.innerHeight||240),landscape=w>h;
-  if(landscape&&h<=650)return Math.max(180,Math.min(w*.58,h-120,430));
-  if(!landscape&&w<900)return Math.max(220,Math.min(w*.86,h*.52,500));
-  if(w>=900&&h>=700)return Math.max(280,Math.min(w*.42,h*.52,500));
-  return Math.max(220,Math.min(w*.78,h*.58,500));
+  if(landscape&&h<=650)return Math.max(180,Math.min(w*.58,h-150,430));
+  if(!landscape&&w<900)return Math.max(220,Math.min(w*.86,h*.49,500));
+  if(w>=900&&h>=700)return Math.max(280,Math.min(w*.42,h*.49,500));
+  return Math.max(220,Math.min(w*.78,h*.54,500));
  };
  Panel.prototype._jarvisCoreSize=function(){return read()};
  Panel.prototype._jarvisSetCoreSize=function(value){const v=clamp(value);save(v);this._jarvisApplyCoreSize?.();this._jarvisPersistSetting?.('core_size',v)};
  Panel.prototype._jarvisApplyCoreSize=function(){
   const root=this._core?.shadowRoot;if(!root)return;
-  const maxByViewport=Math.max(170,Math.min((window.innerWidth||320)-28,(window.innerHeight||480)-96));
+  const maxByViewport=Math.max(170,Math.min((window.innerWidth||320)-36,(window.innerHeight||480)-145));
   const px=Math.round(Math.min(maxByViewport,autoBase()*(read()/100)));
   root.host.style.setProperty('--jv-core-final-size',px+'px');
  };
  Panel.prototype._jarvisCoreSizingCss=function(){return `
  :host{--jv-core-final-size:360px}
- .core{width:var(--jv-core-final-size)!important;height:var(--jv-core-final-size)!important;max-width:calc(100vw - 28px)!important;max-height:calc(100vh - 96px)!important;box-sizing:border-box}
- @media(orientation:landscape) and (max-height:650px){.core{margin-top:6px!important;margin-bottom:6px!important;position:relative!important;top:auto!important}}
- @media(max-height:500px){header{margin-bottom:2px!important}.core{max-height:calc(100vh - 96px)!important}}
+ .core{
+   width:var(--jv-core-final-size)!important;
+   height:var(--jv-core-final-size)!important;
+   max-width:calc(100vw - 36px)!important;
+   max-height:calc(100vh - 145px)!important;
+   box-sizing:border-box;
+   overflow:visible!important;
+   margin-top:12px!important;
+   margin-bottom:46px!important;
+ }
+ .ring{box-sizing:border-box!important;transform-origin:center center!important}
+ .ring.r1{
+   inset:5px!important;
+   border:1.5px solid rgba(0,234,255,.58)!important;
+   box-shadow:0 0 10px rgba(0,234,255,.16),inset 0 0 8px rgba(0,234,255,.08)!important;
+   opacity:1!important;
+ }
+ .label{
+   bottom:-31px!important;
+   left:50%!important;
+   right:auto!important;
+   transform:translateX(-50%)!important;
+   width:max-content!important;
+   max-width:calc(100vw - 42px)!important;
+   white-space:nowrap!important;
+   line-height:1.2!important;
+   padding:5px 12px!important;
+   border-radius:999px!important;
+   background:rgba(2,7,17,.78)!important;
+   border:1px solid rgba(0,234,255,.18)!important;
+   backdrop-filter:blur(6px)!important;
+   z-index:20!important;
+ }
+ .core.state-think::before{
+   inset:15%!important;
+   opacity:.95!important;
+   border:1px solid rgba(255,176,0,.62)!important;
+   box-shadow:0 0 18px rgba(255,176,0,.18)!important;
+   animation:jvThinkPulse 1.35s ease-in-out infinite!important;
+ }
+ .core.state-think::after{
+   inset:23%!important;
+   opacity:.8!important;
+   border:1px dashed rgba(255,207,104,.55)!important;
+   animation:jvThinkSpin 4.2s linear infinite!important;
+ }
+ .core.state-think .r1{border-color:rgba(255,176,0,.72)!important;box-shadow:0 0 16px rgba(255,176,0,.22)!important}
+ .core.state-think .r2{animation-duration:5.5s!important;border-color:rgba(255,207,104,.68)!important}
+ .core.state-think .r3{animation-duration:3.8s!important;border-color:rgba(255,176,0,.48)!important}
+ .core.state-think .r4{animation-duration:7s!important;border-color:rgba(255,207,104,.34)!important}
+ .core.state-think .r5{animation-duration:2.8s!important;border-color:rgba(255,176,0,.5)!important}
+ .core.state-think .glow{
+   animation:jvThinkCore 1.05s ease-in-out infinite!important;
+   box-shadow:0 0 34px #00eaff,0 0 70px rgba(255,176,0,.38)!important;
+ }
+ .core.state-think .label{animation:jvThinkLabel 1.4s ease-in-out infinite!important}
+ .core.state-think .soul{opacity:1!important;filter:drop-shadow(0 0 7px rgba(255,176,0,.65))}
+ @keyframes jvThinkPulse{0%,100%{transform:scale(.94);opacity:.35}50%{transform:scale(1.07);opacity:1}}
+ @keyframes jvThinkSpin{from{transform:rotate(0deg) scale(.96)}to{transform:rotate(360deg) scale(.96)}}
+ @keyframes jvThinkCore{0%,100%{transform:scale(.96);opacity:.86}50%{transform:scale(1.13);opacity:1}}
+ @keyframes jvThinkLabel{0%,100%{letter-spacing:4px;opacity:.72}50%{letter-spacing:5.5px;opacity:1}}
+ @media(orientation:landscape) and (max-height:650px){
+   .core{margin-top:6px!important;margin-bottom:38px!important;position:relative!important;top:auto!important}
+   .label{bottom:-27px!important}
+ }
+ @media(max-height:500px){
+   header{margin-bottom:2px!important}
+   .core{max-height:calc(100vh - 132px)!important;margin-bottom:34px!important}
+   .label{bottom:-25px!important;font-size:10px!important}
+ }
  `};
  Panel.prototype._jarvisInstallCoreSizing=function(){
   const root=this._core?.shadowRoot;if(!root)return;
