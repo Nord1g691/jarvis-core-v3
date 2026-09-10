@@ -1,4 +1,4 @@
-"""Persistent settings storage for JARVIS Core V3."""
+"""Persistent settings storage for JARVIS Core V4."""
 from __future__ import annotations
 
 from copy import deepcopy
@@ -20,6 +20,7 @@ ALLOWED_SECTIONS = {
     "visual_mode",
     "core_size",
     "proposal_reviews",
+    "security_entities",
 }
 
 DEFAULT_AGENT_AUTONOMY = {
@@ -56,6 +57,7 @@ DEFAULT_SETTINGS: dict[str, Any] = {
     "visual_mode": "classic",
     "core_size": 100,
     "proposal_reviews": {},
+    "security_entities": [],
 }
 
 
@@ -79,6 +81,13 @@ def _merge_defaults(data: dict[str, Any] | None) -> dict[str, Any]:
             merged[key].update(value)
         elif value is not None:
             merged[key] = value
+    if not isinstance(merged.get("security_entities"), list):
+        merged["security_entities"] = []
+    merged["security_entities"] = [
+        str(entity_id).strip()
+        for entity_id in merged["security_entities"]
+        if isinstance(entity_id, str) and "." in entity_id
+    ]
     return merged
 
 
@@ -90,6 +99,14 @@ async def async_get_settings(hass: HomeAssistant) -> dict[str, Any]:
 async def async_update_setting(hass: HomeAssistant, section: str, value: Any) -> dict[str, Any]:
     if section not in ALLOWED_SECTIONS:
         raise ValueError(f"Unsupported settings section: {section}")
+    if section == "security_entities":
+        if not isinstance(value, list):
+            raise ValueError("security_entities must be a list")
+        value = [
+            str(entity_id).strip()
+            for entity_id in value
+            if isinstance(entity_id, str) and "." in entity_id
+        ][:250]
     settings = await async_get_settings(hass)
     settings[section] = value
     await _store(hass).async_save(settings)
