@@ -1,28 +1,33 @@
-/* JARVIS Core V3.0.26 — focused runtime bridge. */
-await import('/jarvis_core/jarvis-panel.js?v=3.0.26');
-await import('/jarvis_core/jarvis-domains.js?v=3.0.26');
-await import('/jarvis_core/jarvis-settings.js?v=3.0.26');
-await import('/jarvis_core/jarvis-smart-groups.js?v=3.0.26');
-await import('/jarvis_core/jarvis-agent-theme.js?v=3.0.26');
-await import('/jarvis_core/jarvis-agent-colors.js?v=3.0.26');
-await import('/jarvis_core/jarvis-enhancements.js?v=3.0.26');
-await import('/jarvis_core/jarvis-intelligence.js?v=3.0.26');
-await import('/jarvis_core/jarvis-absence.js?v=3.0.26');
-await import('/jarvis_core/jarvis-quick-consumers.js?v=3.0.26');
-await import('/jarvis_core/jarvis-suggestions.js?v=3.0.26');
-await import('/jarvis_core/jarvis-agent-pipelines.js?v=3.0.26');
-await import('/jarvis_core/jarvis-structure-ui.js?v=3.0.26');
-await import('/jarvis_core/jarvis-visual-modes.js?v=3.0.26');
-await import('/jarvis_core/jarvis-layout-modes.js?v=3.0.26');
-await import('/jarvis_core/jarvis-pro-polish.js?v=3.0.26');
-await import('/jarvis_core/jarvis-cinematic.js?v=3.0.26');
-await import('/jarvis_core/jarvis-agent-autonomy.js?v=3.0.26');
-await import('/jarvis_core/jarvis-entity-roles.js?v=3.0.26');
-await import('/jarvis_core/jarvis-persistent-settings.js?v=3.0.26');
-await import('/jarvis_core/jarvis-health.js?v=3.0.26');
-await import('/jarvis_core/jarvis-core-sizing.js?v=3.0.26');
+/* JARVIS Core V3.0.27 — focused runtime bridge, cache-safe build. */
+const JARVIS_RUNTIME_VERSION='3.0.27';
+const JARVIS_PANEL_TAG='jarvis-panel-v3027';
+const JARVIS_CORE_TAG='jarvis-core-hud-v3027';
+const asset=name=>`/jarvis_core/${name}?v=${JARVIS_RUNTIME_VERSION}`;
 
-const Panel=customElements.get('jarvis-panel');
+await import(asset('jarvis-panel.js'));
+await import(asset('jarvis-domains.js'));
+await import(asset('jarvis-settings.js'));
+await import(asset('jarvis-smart-groups.js'));
+await import(asset('jarvis-agent-theme.js'));
+await import(asset('jarvis-agent-colors.js'));
+await import(asset('jarvis-enhancements.js'));
+await import(asset('jarvis-intelligence.js'));
+await import(asset('jarvis-absence.js'));
+await import(asset('jarvis-quick-consumers.js'));
+await import(asset('jarvis-suggestions.js'));
+await import(asset('jarvis-agent-pipelines.js'));
+await import(asset('jarvis-structure-ui.js'));
+await import(asset('jarvis-visual-modes.js'));
+await import(asset('jarvis-layout-modes.js'));
+await import(asset('jarvis-pro-polish.js'));
+await import(asset('jarvis-cinematic.js'));
+await import(asset('jarvis-agent-autonomy.js'));
+await import(asset('jarvis-entity-roles.js'));
+await import(asset('jarvis-persistent-settings.js'));
+await import(asset('jarvis-health.js'));
+await import(asset('jarvis-core-sizing.js'));
+
+const Panel=customElements.get(JARVIS_PANEL_TAG);
 if(Panel&&!Panel.prototype.__jarvisRuntimePatched){
  const render=Panel.prototype._render;
  Panel.prototype._render=function(){render.call(this);this.shadowRoot?.querySelector('.section.sat')?.remove()};
@@ -35,12 +40,13 @@ if(Panel&&!Panel.prototype.__jarvisRuntimePatched){
   const grid=root?.querySelector('.grid');
   if(grid&&!root.getElementById('cardsDrawer')){const drawer=document.createElement('details');drawer.id='cardsDrawer';drawer.className='jarvis-cards-drawer';const summary=document.createElement('summary');summary.innerHTML='<span>▾ CARTES JARVIS</span><small>OUVRIR</small>';grid.parentNode.insertBefore(drawer,grid);drawer.appendChild(summary);drawer.appendChild(grid);const saved=localStorage.getItem('jarvis_cards_drawer_open');drawer.open=saved==='1';const sync=()=>{summary.querySelector('small').textContent=drawer.open?'FERMER':'OUVRIR';localStorage.setItem('jarvis_cards_drawer_open',drawer.open?'1':'0')};drawer.addEventListener('toggle',sync);sync();if(!root.getElementById('cardsDrawerStyle')){const style=document.createElement('style');style.id='cardsDrawerStyle';style.textContent='.jarvis-cards-drawer{max-width:950px;margin:0 auto 18px;border:1px solid #00eaff33;border-radius:10px;background:#03132288;overflow:hidden}.jarvis-cards-drawer>summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:42px;padding:0 14px;cursor:pointer;color:#8bd6ea;font-size:10px;letter-spacing:2px;user-select:none}.jarvis-cards-drawer>summary::-webkit-details-marker{display:none}.jarvis-cards-drawer[open]>summary{border-bottom:1px solid #00eaff22}.jarvis-cards-drawer>.grid{padding:12px;box-sizing:border-box}';root.appendChild(style)}}
   this._applySystemDock?.();
+  this._updateBuildBadge?.();
  };
  Panel.prototype.__jarvisRuntimePatched=true;
 }
 
-customElements.whenDefined('jarvis-core-hud').then(()=>{
- const Core=customElements.get('jarvis-core-hud');if(!Core||Core.prototype.__jarvisConversationPatched)return;
+customElements.whenDefined(JARVIS_CORE_TAG).then(()=>{
+ const Core=customElements.get(JARVIS_CORE_TAG);if(!Core||Core.prototype.__jarvisConversationPatched)return;
  const ROUTE_LABELS={jarvis:'JARVIS',chef:'CHEF',energy:'ÉNERGIE',sentinel:'SENTINEL',climate:'CLIMAT',water:'EAU / PISCINE',media:'MÉDIA',garden:'JARDIN',calendar:'CALENDRIER',mail:'MESSAGERIE',home:'MAISON',technical:'TECHNIQUE'};
  Core.prototype.process=async function(text){if(this.processing||!text)return;this.processing=true;this.voiceActivity=1;if(this.listenTimer){clearTimeout(this.listenTimer);this.listenTimer=null}try{this.recognition?.stop()}catch(_){}this.log('VOUS: '+text);this.setState('JARVIS RÉFLÉCHIT','#ffb000');const longSearchTimer=setTimeout(()=>{if(this.processing)this.setState('JARVIS RECHERCHE','#00eaff')},2500);try{const token=this.token();if(!token)throw Error('Authentification Home Assistant indisponible');const body={text};const pmap=this.__jarvisThemePanel?._jarvisPipelineMap?.()||{};if(Object.keys(pmap).length)body.pipeline_map=pmap;const pipe=localStorage.getItem('jarvis_assist_pipeline')||'';if(pipe)body.pipeline=pipe;if(this.conversationId)body.conversation_id=this.conversationId;const r=await fetch(location.origin+'/api/jarvis/conversation',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw Error(d?.message||d?.error||('HTTP '+r.status));const routed=String(d?.orchestration?.agent||'jarvis');const dock=this.__jarvisThemePanel?._core?.shadowRoot?.getElementById('agentRouteDock');if(dock)dock.textContent='ROUTE · '+(ROUTE_LABELS[routed]||routed.toUpperCase())+(d?.delegation?.active?' → PIPELINE':'');this.__jarvisThemePanel?._jarvisApplyAgentTheme?.(routed);const liveAgent=`${d?.pipeline_name||''} ${d?.agent_id||''}`.trim();if(liveAgent&&routed==='jarvis')this.__jarvisThemePanel?._jarvisApplyAgentTheme(liveAgent);this.conversationId=d.conversation_id||this.conversationId;const speech=d?.response?.speech?.plain?.speech||d?.response?.speech?.ssml?.speech||'';this.log('JARVIS: '+(speech||'[réponse sans texte vocal]'));if(speech)await this.speak(speech);else this.setState('OPÉRATIONNEL',this.__jarvisThemePanel?._jarvisActiveTheme?.color||'#00eaff')}catch(e){this.log('✗ '+e.message);this.setState('JARVIS ERREUR','#ff4050');await new Promise(r=>setTimeout(r,800));this.setState('OPÉRATIONNEL',this.__jarvisThemePanel?._jarvisActiveTheme?.color||'#00eaff')}finally{clearTimeout(longSearchTimer);this.processing=false;if(this.conversationMode)this.startListeningWindow()}};
  Core.prototype.toggleConversation=function(){if(this.conversationMode){this.stopConversation();this.setState('OPÉRATIONNEL',this.__jarvisThemePanel?._jarvisActiveTheme?.color||'#00eaff');return}this.conversationMode=true;this.conversationId=null;this.startListeningWindow()};
