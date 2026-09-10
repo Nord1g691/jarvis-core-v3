@@ -5,6 +5,28 @@ const JARVIS_CORE_TAG='jarvis-core-hud-v3027';
 const asset=name=>`/jarvis_core/${name}?v=${JARVIS_RUNTIME_VERSION}`;
 
 await import(asset('jarvis-panel.js'));
+
+/* V3.0.26 extension modules still ask the registry for the historical names.
+ * Route those lookups to this build without ever instantiating the stale elements.
+ * This keeps all existing extension files compatible while the actual HA panel/core
+ * names remain unique per release. */
+const registry=customElements;
+if(!registry.__jarvisV3027Compat){
+  const nativeGet=registry.get.bind(registry);
+  const nativeWhenDefined=registry.whenDefined.bind(registry);
+  registry.get=(name)=>{
+    if(name==='jarvis-panel')return nativeGet(JARVIS_PANEL_TAG);
+    if(name==='jarvis-core-hud')return nativeGet(JARVIS_CORE_TAG);
+    return nativeGet(name);
+  };
+  registry.whenDefined=(name)=>{
+    if(name==='jarvis-panel')return nativeWhenDefined(JARVIS_PANEL_TAG);
+    if(name==='jarvis-core-hud')return nativeWhenDefined(JARVIS_CORE_TAG);
+    return nativeWhenDefined(name);
+  };
+  registry.__jarvisV3027Compat=true;
+}
+
 await import(asset('jarvis-domains.js'));
 await import(asset('jarvis-settings.js'));
 await import(asset('jarvis-smart-groups.js'));
