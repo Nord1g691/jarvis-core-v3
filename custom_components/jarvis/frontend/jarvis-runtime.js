@@ -14,6 +14,7 @@ const Panel=customElements.get(JARVIS_PANEL_TAG),Core=customElements.get(JARVIS_
 if(!Panel||!Core)throw new Error('JARVIS V4 natif incomplet');
 
 try{const ui=await import(asset('jarvis-v4-ui.js'));ui.installJarvisV4Ui?.(Panel)}catch(e){console.warn('[JARVIS V4] UI extension:',e)}
+try{const finalUi=await import(asset('jarvis-v4-final.js'));finalUi.installJarvisV4Final?.(Panel)}catch(e){console.warn('[JARVIS V4] Final UI extension:',e)}
 
 if(!Panel.prototype.__jarvisRuntimeV4Patched){
  const boot=Panel.prototype._bootCore;
@@ -24,6 +25,8 @@ if(!Panel.prototype.__jarvisRuntimeV4Patched){
   root?.getElementById('stateDock')?.remove();
   root?.getElementById('agentRouteDock')?.remove();
   this._v4InstallCore?.();
+  this._v4InstallFinal?.();
+  this._v4RegisterCards?.();
   this._applyDisplay?.();
  };
  Panel.prototype.__jarvisRuntimeV4Patched=true;
