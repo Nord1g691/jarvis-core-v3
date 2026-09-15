@@ -19,8 +19,9 @@ export function installJarvisV4Ui(Panel){
    `;r.appendChild(s)
   }
   const settings=r.getElementById('settingsPanel');if(!settings||settings.querySelector('.v4-security-section'))return;
+  const wrap=settings.querySelector('.settings-wrap');if(!wrap)return;
   const sec=document.createElement('div');sec.className='section v4-security-section';sec.innerHTML='<div class="title">🛡️ SÉCURITÉ · CAPTEURS SURVEILLÉS</div><div class="note">Le score Sécurité ne tient compte que des entités cochées ici.</div><div class="v4-security-search"><input id="v4SecuritySearch" placeholder="Rechercher caméra, porte, alarme, capteur…"></div><div class="v4-security-list" id="v4SecurityList">Chargement…</div><div class="v4-security-summary" id="v4SecuritySummary"></div><button class="v4-security-save" id="v4SecuritySave">ENREGISTRER LA SÉLECTION</button>';
-  settings.insertBefore(sec,settings.querySelector('.actions'));sec.querySelector('#v4SecuritySearch').oninput=e=>this._v4RenderSecurityEntities(e.target.value);sec.querySelector('#v4SecuritySave').onclick=()=>this._v4SaveSecurityEntities()
+  wrap.insertBefore(sec,wrap.querySelector('.actions'));sec.querySelector('#v4SecuritySearch').oninput=e=>this._v4RenderSecurityEntities(e.target.value);sec.querySelector('#v4SecuritySave').onclick=()=>this._v4SaveSecurityEntities()
  };
 
  Panel.prototype._v4LoadSecurityEntities=async function(){this._v4InstallShell();try{const d=await this._hass.callApi('GET','jarvis/settings');this._v4SecuritySelected=new Set(d?.settings?.security_entities||[])}catch(_){this._v4SecuritySelected=new Set()}this._v4RenderSecurityEntities('')};
