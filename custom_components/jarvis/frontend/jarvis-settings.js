@@ -1,4 +1,4 @@
-/* JARVIS V4.0.0 — native settings controls. */
+/* JARVIS V4.1.1 — native settings controls. */
 const Panel=customElements.get('jarvis-panel-v4');
 if(Panel&&!Panel.prototype.__jarvisAccordionInstalled){
  Panel.prototype._escapeSetting=function(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))};
