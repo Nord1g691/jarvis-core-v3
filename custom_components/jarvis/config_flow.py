@@ -1,4 +1,4 @@
-"""Config flow for JARVIS Core V3."""
+"""Config flow for JARVIS Core V4."""
 from __future__ import annotations
 
 from typing import Any
@@ -11,7 +11,7 @@ from .const import DOMAIN
 
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Set up JARVIS Core V3 without manual entity configuration."""
+    """Set up JARVIS Core V4 without manual entity configuration."""
 
     VERSION = 1
 
@@ -29,7 +29,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_abort(reason="single_instance_allowed")
 
         return self.async_create_entry(
-            title="JARVIS Core Assistant",
+            title="JARVIS Core V4",
             data={},
         )
 
