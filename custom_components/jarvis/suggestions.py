@@ -1,4 +1,4 @@
-"""Read-only suggestion engine for JARVIS Core V3.
+"""Read-only suggestion engine for JARVIS Core V4.
 
 This module observes current Home Assistant state and returns conservative
 suggestions. It never creates automations, calls services, or changes state.
