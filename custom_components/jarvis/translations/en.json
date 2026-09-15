@@ -2,9 +2,12 @@
   "config": {
     "step": {
       "user": {
-        "title": "JARVIS Core Assistant",
-        "description": "JARVIS is configured automatically; no entity IDs are required."
+        "title": "JARVIS Core V4",
+        "description": "JARVIS Core V4 is configured automatically; no entity IDs are required."
       }
+    },
+    "abort": {
+      "single_instance_allowed": "Only one JARVIS Core V4 instance is allowed."
     }
   }
 }
