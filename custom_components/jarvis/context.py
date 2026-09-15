@@ -1,4 +1,4 @@
-"""Read-only household context API for JARVIS Core V3."""
+"""Read-only household context API for JARVIS Core V4."""
 from __future__ import annotations
 
 from aiohttp import web
