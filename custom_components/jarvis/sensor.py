@@ -1,4 +1,4 @@
-"""JARVIS Core V3 sensor platform."""
+"""JARVIS Core V4 sensor platform."""
 from __future__ import annotations
 
 from homeassistant.components.sensor import SensorEntity
