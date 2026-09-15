@@ -1,4 +1,4 @@
-"""Lightweight orchestration contract for JARVIS Core V3.
+"""Lightweight orchestration contract for JARVIS Core V4.
 
 This module deliberately does not execute Home Assistant actions. It classifies a
 request, exposes the stable agent catalogue, and gives the frontend/backend a
