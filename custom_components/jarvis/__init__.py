@@ -26,7 +26,7 @@ from .suggestions import JarvisSuggestionsView
 
 PLATFORMS = ["sensor"]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
-ASSET_VERSION = "4.1.0"
+ASSET_VERSION = "4.1.1"
 PANEL_ELEMENT = "jarvis-panel-v4"
 PANEL_MODULE = f"{FRONTEND_URL}/jarvis-runtime-v4.js?v={ASSET_VERSION}"
 
