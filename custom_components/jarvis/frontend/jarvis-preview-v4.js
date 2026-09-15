@@ -1,4 +1,4 @@
-/* JARVIS V4.1.0 — preview-to-native visual integration.
+/* JARVIS V4.1.1 — preview-to-native visual integration.
    Keeps the native HA/Assist logic and ports the validated preview mechanics only. */
 export function installJarvisPreviewV4(Panel){
  if(!Panel||Panel.prototype.__jarvisPreviewV4Installed)return;
@@ -6,13 +6,13 @@ export function installJarvisPreviewV4(Panel){
   const root=this._core?.shadowRoot,core=root?.getElementById('core');
   if(!root||!core)return;
   core.querySelectorAll('.satellite').forEach(e=>e.remove());
-  this.shadowRoot?.querySelector('.version')?.replaceChildren(document.createTextNode('JARVIS V4.1.0'));
+  this.shadowRoot?.querySelector('.version')?.replaceChildren(document.createTextNode('JARVIS V4.1.1'));
 
   if(!root.getElementById('jarvisPreviewV4Style')){
    const s=document.createElement('style');s.id='jarvisPreviewV4Style';s.textContent=`
    :host{--jv-mech:var(--jv-core-state,#00eaff);--jv-mech-soft:color-mix(in srgb,var(--jv-mech) 28%,transparent)}
    .core{isolation:isolate!important;overflow:visible!important;filter:brightness(.66) saturate(.84) drop-shadow(0 22px 44px #000b)!important;transition:filter .42s ease!important}
-   .core>.orbit{opacity:.07!important}.core>.soul{z-index:12!important}.core>.leds{z-index:16!important}.core>.glow{z-index:24!important;width:20%!important;height:20%!important;background:transparent!important;box-shadow:none!important;opacity:.02!important}
+   .core>.orbit,.core>.orbit2{opacity:0!important}.core>.soul{z-index:12!important}.core>.leds{z-index:16!important}.core>.glow{z-index:24!important;width:20%!important;height:20%!important;background:transparent!important;box-shadow:none!important;opacity:0!important}
    .jv-mech-depth,.jv-mech-grid,.jv-mech-segments,.jv-mech-scale,.jv-mech-axis,.jv-mech-crown,.jv-mech-radials,.jv-mech-lock,.jv-mech-hub,.jv-mech-glass,.jv-mech-pulse{position:absolute;left:50%;top:50%;pointer-events:none;transform:translate(-50%,-50%);border-radius:50%}
    .jv-mech-depth{z-index:5;width:79%;aspect-ratio:1;border:1px solid color-mix(in srgb,var(--jv-mech) 28%,transparent);box-shadow:0 0 0 7px #00101a88,0 0 0 8px color-mix(in srgb,var(--jv-mech) 12%,transparent),inset 0 0 30px color-mix(in srgb,var(--jv-mech) 11%,transparent);background:repeating-conic-gradient(from 2deg,color-mix(in srgb,var(--jv-mech) 31%,transparent) 0 1.2deg,transparent 1.2deg 7.5deg);-webkit-mask:radial-gradient(circle,transparent 0 54%,#000 55% 65%,transparent 66%);mask:radial-gradient(circle,transparent 0 54%,#000 55% 65%,transparent 66%);animation:jvDeep 26s linear infinite}
    .jv-mech-grid{z-index:6;width:61%;aspect-ratio:1;opacity:.58;background:linear-gradient(90deg,transparent 49.5%,color-mix(in srgb,var(--jv-mech) 24%,transparent) 49.5% 50.5%,transparent 50.5%),linear-gradient(transparent 49.5%,color-mix(in srgb,var(--jv-mech) 24%,transparent) 49.5% 50.5%,transparent 50.5%),repeating-radial-gradient(circle,transparent 0 11px,color-mix(in srgb,var(--jv-mech) 12%,transparent) 12px 13px,transparent 14px 21px);filter:drop-shadow(0 0 6px color-mix(in srgb,var(--jv-mech) 18%,transparent));animation:jvGrid 3.6s ease-in-out infinite}
