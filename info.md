@@ -1,11 +1,11 @@
-# JARVIS Core V3
+# JARVIS Core V4
 
-JARVIS Core V3 — intégration Home Assistant.
+JARVIS Core V4 — intégration Home Assistant.
 
 ## Installation
 
-Installation via HACS : ajoutez ce dépôt comme dépôt personnalisé de type **Integration**, puis installez JARVIS Core V3.
+Installation via HACS : ajoutez ce dépôt comme dépôt personnalisé de type **Integration**, puis installez **JARVIS Core V4**.
 
 ## Configuration
 
-Après installation, redémarrez Home Assistant puis ajoutez **JARVIS Core V3** depuis Paramètres → Appareils et services.
+Après installation ou mise à jour, redémarrez Home Assistant puis ouvrez **JARVIS** depuis la barre latérale.
