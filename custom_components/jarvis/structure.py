@@ -1,4 +1,4 @@
-"""Read-only Home Assistant structure inventory for JARVIS Core V3."""
+"""Read-only Home Assistant structure inventory for JARVIS Core V4."""
 from __future__ import annotations
 
 from collections import Counter
