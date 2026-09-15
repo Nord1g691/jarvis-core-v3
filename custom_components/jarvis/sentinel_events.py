@@ -1,4 +1,4 @@
-"""Read-only Sentinel event engine for JARVIS Core V3."""
+"""Read-only Sentinel event engine for JARVIS Core V4."""
 from __future__ import annotations
 
 from collections import deque
