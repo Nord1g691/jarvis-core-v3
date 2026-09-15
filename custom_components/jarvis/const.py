@@ -1,4 +1,4 @@
-"""Constants for JARVIS Core 3."""
+"""Constants for JARVIS Core V4."""
 DOMAIN = "jarvis"
 PANEL_URL = "jarvis"
 FRONTEND_URL = "/jarvis_core"
