@@ -1,5 +1,5 @@
-/* JARVIS V4.1.0 — canonical native runtime. */
-const JARVIS_RUNTIME_VERSION='4.1.0';
+/* JARVIS V4.1.1 — canonical native runtime. */
+const JARVIS_RUNTIME_VERSION='4.1.1';
 const JARVIS_PANEL_TAG='jarvis-panel-v4';
 const JARVIS_CORE_TAG='jarvis-core-v4';
 const asset=name=>`/jarvis_core/${name}?v=${JARVIS_RUNTIME_VERSION}`;
@@ -16,6 +16,7 @@ if(!Panel||!Core)throw new Error('JARVIS V4 natif incomplet');
 try{const ui=await import(asset('jarvis-v4-ui.js'));ui.installJarvisV4Ui?.(Panel)}catch(e){console.warn('[JARVIS V4] UI extension:',e)}
 try{const finalUi=await import(asset('jarvis-v4-final.js'));finalUi.installJarvisV4Final?.(Panel)}catch(e){console.warn('[JARVIS V4] Final UI extension:',e)}
 try{const previewUi=await import(asset('jarvis-preview-v4.js'));previewUi.installJarvisPreviewV4?.(Panel)}catch(e){console.warn('[JARVIS V4] Preview integration:',e)}
+try{const nativeFix=await import(asset('jarvis-v4-native-fix.js'));nativeFix.installJarvisV4NativeFix?.(Panel)}catch(e){console.warn('[JARVIS V4] Native fix:',e)}
 
 if(!Panel.prototype.__jarvisRuntimeV4Patched){
  const boot=Panel.prototype._bootCore;
@@ -28,6 +29,7 @@ if(!Panel.prototype.__jarvisRuntimeV4Patched){
   this._v4InstallCore?.();
   this._v4InstallFinal?.();
   this._v4InstallPreview?.();
+  this._v4InstallNativeFix?.();
   this._v4RegisterCards?.();
   this._applyDisplay?.();
  };
