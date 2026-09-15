@@ -2,12 +2,12 @@
   "config": {
     "step": {
       "user": {
-        "title": "Assistant JARVIS Core",
-        "description": "JARVIS se configure automatiquement ; aucun identifiant d'entité n'est requis."
+        "title": "JARVIS Core V4",
+        "description": "JARVIS Core V4 se configure automatiquement ; aucun identifiant d'entité n'est requis."
       }
     },
     "abort": {
-      "single_instance_allowed": "Une seule instance de JARVIS Core V3 est autorisée."
+      "single_instance_allowed": "Une seule instance de JARVIS Core V4 est autorisée."
     }
   }
 }
