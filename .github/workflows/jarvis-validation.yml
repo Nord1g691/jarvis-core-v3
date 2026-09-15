@@ -16,6 +16,45 @@ jobs:
         with:
           python-version: "3.13"
 
+      - name: Validate V4 release metadata coherence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('.')
+          integration = root / 'custom_components' / 'jarvis'
+          frontend = integration / 'frontend'
+          manifest = json.loads((integration / 'manifest.json').read_text(encoding='utf-8'))
+          version = manifest['version']
+
+          assert manifest['name'] == 'JARVIS Core V4'
+          assert f'ASSET_VERSION = "{version}"' in (integration / '__init__.py').read_text(encoding='utf-8')
+          assert f"JARVIS_RUNTIME_VERSION='{version}'" in (frontend / 'jarvis-runtime.js').read_text(encoding='utf-8')
+          assert f'v={version}-native' in (frontend / 'jarvis-runtime-v4.js').read_text(encoding='utf-8')
+          assert f"JARVIS_CORE_VERSION='{version}'" in (frontend / 'jarvis-core-v4.js').read_text(encoding='utf-8')
+          assert f"VERSION='{version}'" in (frontend / 'jarvis-panel-v4.js').read_text(encoding='utf-8')
+          assert f'JARVIS V{version}' in (frontend / 'jarvis-preview-v4.js').read_text(encoding='utf-8')
+          assert f'JARVIS V{version}' in (frontend / 'jarvis-v4-final.js').read_text(encoding='utf-8')
+          assert not (frontend / 'jarvis-v4-native-fix.js').exists()
+
+          user_facing = [
+              integration / 'strings.json',
+              integration / 'translations' / 'fr.json',
+              integration / 'translations' / 'en.json',
+              root / 'README.md',
+              root / 'info.md',
+              root / 'hacs.json',
+          ]
+          for path in user_facing:
+              text = path.read_text(encoding='utf-8')
+              assert 'Core V3' not in text, f'stale V3 label in {path}'
+
+          hacs = json.loads((root / 'hacs.json').read_text(encoding='utf-8'))
+          assert hacs['name'] == 'JARVIS Core V4'
+          print(f'JARVIS release metadata coherent: {version}')
+          PY
+
       - name: Install exact Home Assistant 2026.8.2 validation environment
         run: |
           python -m pip install --upgrade pip
