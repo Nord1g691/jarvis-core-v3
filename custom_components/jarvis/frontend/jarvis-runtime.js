@@ -34,8 +34,37 @@ if(!Panel.prototype.__jarvisRuntimeV4Patched){
  Panel.prototype.__jarvisRuntimeV4Patched=true;
 }
 
-if(!Core.prototype.__jarvisConversationV4Patched){
- const baseProcess=Core.prototype.process;
- Core.prototype.process=async function(text){return baseProcess.call(this,text)};
- Core.prototype.__jarvisConversationV4Patched=true;
+if(!Core.prototype.__jarvisHaBridgeV411){
+ Core.prototype._states=async function(){
+  if(this._hass?.states)return Object.values(this._hass.states);
+  if(this._hass?.callApi)return await this._hass.callApi('GET','states');
+  throw new Error('Connexion Home Assistant indisponible');
+ };
+ Core.prototype.process=async function(text){
+  if(this.processing||!text)return;
+  this.processing=true;this.voiceActivity=1;
+  try{this.recognition?.stop()}catch(_){}
+  this.setState('JARVIS RÉFLÉCHIT','#ffb000');
+  try{
+   if(!this._hass?.callApi)throw new Error('API Home Assistant indisponible');
+   const body={text};
+   const pipe=localStorage.getItem('jarvis_assist_pipeline')||'';
+   if(pipe)body.pipeline=pipe;
+   if(this.conversationId)body.conversation_id=this.conversationId;
+   const d=await this._hass.callApi('POST','jarvis/conversation',body);
+   this.conversationId=d?.conversation_id||this.conversationId;
+   const speech=d?.response?.speech?.plain?.speech||d?.response?.speech?.ssml?.speech||'';
+   this.log('✓ Réponse JARVIS');
+   if(speech)await this.speak(speech);else this.setState('OPÉRATIONNEL','#00eaff');
+  }catch(e){
+   this.log('✗ '+e.message);
+   this.setState('JARVIS ERREUR','#ff4050');
+   await new Promise(r=>setTimeout(r,800));
+   this.setState('OPÉRATIONNEL','#00eaff');
+  }finally{
+   this.processing=false;
+   if(this.conversationMode)this.startListeningWindow();
+  }
+ };
+ Core.prototype.__jarvisHaBridgeV411=true;
 }
